@@ -1,0 +1,58 @@
+---
+import Layout from '../layouts/PageLayout.astro';
+import Header from '../components/widgets/Header.astro';
+import { getPermalink } from '../components/utils/permalinks';
+import Hero from '../components/widgets/Hero.astro';
+import { DISCORD_LINK } from '../components/constants';
+
+import GameCarousel from '../components/dweam/GameCarousel.astro';
+import GameInfo from '~/components/dweam/GameInfo.astro';
+import GameGrid from '../components/dweam/GameGrid.astro';
+
+// Fetch games data during the build process
+let gamesData = [];
+
+try {
+  console.log('Fetching games from', import.meta.env.INTERNAL_BACKEND_URL);
+  const base_url = import.meta.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
+  const response = await fetch(`${base_url}/game_info`);
+  console.log('Response', response);
+  if (response.ok) {
+    gamesData = await response.json();
+  } else {
+    console.error('Failed to fetch games', response.status, response.statusText);
+  }
+} catch (error) {
+  console.error('Error fetching games:', error);
+}
+
+const metadata = {
+  ignoreTitleTemplate: true,
+};
+---
+<Layout metadata={metadata}>
+  <Hero 
+    actions={[
+      {
+        variant: 'primary',
+        text: 'Discord',
+        href: DISCORD_LINK,
+        target: '_blank',
+        icon: 'tabler:brand-discord',
+      }
+    ]}
+  >
+    <Fragment slot="title">
+      Games at your Fingertips
+    </Fragment>
+
+    <Fragment slot="subtitle">
+      No downloads. No more code. Just neural architectures.
+    </Fragment>
+  </Hero>
+
+  <GameCarousel games={gamesData} />
+  <div class="mt-16">
+    <GameGrid id="game-grid" games={gamesData} />
+  </div>
+</Layout>

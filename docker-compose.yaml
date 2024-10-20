@@ -1,0 +1,73 @@
+services:
+  frontend:
+    container_name: dweam-frontend
+    build:
+      context: ./dweam_web
+      dockerfile: Dockerfile
+    image: dweam_frontend:local
+    ports:
+      - "127.0.0.1:4321:4321"
+    volumes:
+      - ./dweam_web:/app
+      - /app/node_modules
+    environment:
+      - INTERNAL_BACKEND_URL=http://backend:8080
+    command: pnpm run dev --host 0.0.0.0
+
+  backend:
+    container_name: dweam-backend
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+      # TODO is this shmem thing right
+      shm_size: 2gb
+    image: dweam_backend:local
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      - INTERNAL_TURN_URL=turnserver:3478
+      - TURN_SECRET_KEY=${TURN_SECRET_KEY}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - CACHE_DIR=/root/.cache-data
+      - JAX_COMPILATION_CACHE_DIR=/root/.cache-data/xla_cache
+    volumes:
+      - ./.cache-data:/root/.cache-data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # ulimits:
+    #   memlock:
+    #     soft: -1
+    #     hard: -1
+      # stack:
+      #   soft: 67108864
+      #   hard: 67108864
+
+  turnserver:
+    container_name: dweam-turnserver
+    image: coturn/coturn:latest
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "5349:5349"
+      - "5349:5349/udp"
+      # - "49152-65535:49152-65535/udp"
+      - "50000-50010:50000-50010/udp"
+
+    # use network_mode: host when running rootful docker on linux
+    # network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/turnserver.conf
+    command: >
+      -c /etc/turnserver.conf
+      # -e DETECT_EXTERNAL_IP=yes \
+      -e DETECT_RELAY_IP=yes \
+      --min-port=50000 \
+      --max-port=50010 \
+      --use-auth-secret \
+      --static-auth-secret=${TURN_SECRET_KEY}

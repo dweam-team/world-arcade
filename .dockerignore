@@ -1,0 +1,35 @@
+# Ignore environment files
+*.env
+**/*.env
+
+# Ignore node modules
+node_modules/
+**/node_modules/
+
+# Ignore git repository files
+**/.git/
+
+# Ignore Dockerfile and docker-compose files
+Dockerfile
+**/Dockerfile
+docker-compose.yaml
+**/docker-compose.yaml
+
+# Ignore logs and temporary files
+*.log
+**/*.log
+*.tmp
+**/*.tmp
+*.swp
+**/*.swp
+
+# Ignore build directories
+dist
+**/dist
+build
+**/build
+
+astrowind
+dataset
+
+.cache-data/

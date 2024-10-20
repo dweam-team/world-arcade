@@ -1,0 +1,47 @@
+FROM nvcr.io/nvidia/pytorch:24.10-py3
+
+WORKDIR /app
+
+# Install system dependencies and clean up in one layer
+RUN apt-get update && apt-get install -y \
+    xvfb \
+    python3-pygame \
+    git \
+    curl \
+    build-essential \
+    cmake \
+    zlib1g-dev \
+    libsdl2-dev \
+    libhdf5-dev \
+
+    # for lucid-v1
+    wget \
+    libgl1 \
+    unzip \
+
+    && rm -rf /var/lib/apt/lists/*
+
+# Install poetry using the official installer
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_VERSION=1.8.4
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    cd /usr/local/bin && \
+    ln -s /opt/poetry/bin/poetry && \
+    poetry config virtualenvs.create false && \
+    poetry config installer.parallel false  # installing from two branches on same repo fails otherwise
+
+# Copy and install main dependencies
+COPY pyproject.toml poetry.lock ./
+RUN poetry install --no-interaction --no-ansi --no-root
+
+# Copy the rest of the application code
+COPY . .
+
+# Install root
+RUN poetry install --no-interaction --no-ansi
+
+EXPOSE 8080
+
+# Start Xvfb and run the server
+CMD Xvfb :99 -screen 0 1024x768x16 & \
+    DISPLAY=:99 poetry run python dweam/scripts/serve.py

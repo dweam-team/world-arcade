@@ -1,0 +1,224 @@
+---
+import GameInfo from './GameInfo.astro';
+
+interface Props {
+  games: Array<{ id: string, name: string }>; // Define the structure of your game objects
+}
+
+// Ensure CS:GO is the first game
+const sortedGames = [...Astro.props.games];
+const csgoIndex = sortedGames.findIndex(game => game.id === 'csgo');
+if (csgoIndex > -1) {
+  const csgoGame = sortedGames.splice(csgoIndex, 1)[0];
+  sortedGames.unshift(csgoGame);
+}
+---
+
+<div class="carousel-container relative m-auto flex items-center justify-center max-w-4xl">
+  <!-- Move both buttons before the swiper -->
+  <div class="swiper-button-prev"></div>
+  <div class="swiper-button-next"></div>
+  <div class="swiper">
+    <div class="swiper-wrapper">
+      {sortedGames.map(game => (
+        <div class="swiper-slide relative game-container carousel-slide">
+          <a href={`/game?type=${game.type}&id=${game.id}`} class="block w-full h-full">
+            <video 
+              muted 
+              preload="metadata" 
+              class="w-full h-auto"
+              loop
+              autoplay
+            >
+              <source src={`/thumbnails/${game.type}_${game.id}.webm`} type="video/webm" />
+              <source src={`/thumbnails/${game.type}_${game.id}.mp4`} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            <GameInfo game={game} />
+          </a>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<!-- Swiper styles -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css" />
+
+<!-- Swiper JS -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const swiper = new Swiper('.swiper', {
+      loop: true,
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+      },
+    });
+
+    // Add event listener to force page reload on game link click
+    document.querySelectorAll('.swiper-slide a').forEach(link => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        window.location.href = link.href;
+      });
+    });
+  });
+</script>
+
+<style>
+.carousel-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.carousel-container {
+  position: relative;
+}
+
+.swiper {
+  width: 100%;
+  position: relative;
+}
+
+.swiper-slide {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  overflow: hidden;
+}
+
+.game-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 15px;
+  height: 20%;
+  /* transform: translateY(85%); */
+  top: 87%;
+  transition: top 0.3s ease;
+}
+
+.swiper-slide:hover .game-info {
+  top: 80%;
+  /* transform: translateY(0); */
+}
+
+.game-name {
+  font-size: 1.5rem;
+  text-align: left;
+  margin: 0;
+  font-weight: bold;
+  padding-left: 10px;
+}
+
+.game-tags {
+  font-size: 0.875rem;
+  text-align: left;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  padding-left: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-weight: 600;  /* Increased weight for better readability */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;  /* Modern, clean font stack */
+  letter-spacing: 0.02em;  /* Slight letter spacing for better readability */
+}
+
+.swiper-slide:hover .game-tags {
+  opacity: 1;
+}
+
+video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* Navigation buttons */
+.swiper-button-prev,
+.swiper-button-next {
+  position: absolute;
+  margin-top: 0;
+  top: 0;
+  width: 160px;
+  height: calc(100% - 110px);
+  transition: background 0.3s;
+  z-index: 10; /* Increased z-index to ensure buttons stay on top */
+}
+
+.swiper-button-prev {
+  left: 0;
+}
+
+.swiper-button-next {
+  right: 0;
+}
+
+/* .swiper-button-prev:hover,
+.swiper-button-next:hover {
+  background: rgba(0, 0, 0, 0.5);
+} */
+
+.swiper-button-prev::after,
+.swiper-button-next::after {
+  padding-top: 20%;
+  font-size: 30px;
+  color: #fff;
+}
+
+.swiper-button-prev::after {
+  margin-right: auto;
+  padding-left: 20px;
+}
+.swiper-button-next::after {
+  margin-left: auto;
+  padding-right: 10px;
+}
+
+/* Progressive shadow effect on video */
+.carousel-container .swiper-button-prev:hover ~ .swiper .swiper-slide::before,
+.carousel-container .swiper-button-next:hover ~ .swiper .swiper-slide::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20%; /* Adjusted to cover only 20% of the screen */
+  height: 100%;
+  pointer-events: none;
+  z-index: 2; /* Ensure shadow is above the video but below buttons */
+}
+
+.carousel-container .swiper-button-prev:hover ~ .swiper .swiper-slide::before {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+}
+
+.carousel-container .swiper-button-next:hover ~ .swiper .swiper-slide::before {
+  left: 80%;
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+}
+
+</style>

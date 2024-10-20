@@ -1,0 +1,329 @@
+---
+
+---
+
+<div class="flex-grow rounded-lg shadow-md overflow-hidden">
+  <div id="videoContainer" class="w-full h-full">
+    <video id="video" autoplay playsinline></video>
+    <div id="playOverlay" class="play-icon"></div>
+  </div>
+</div>
+
+<script>
+  const video = document.getElementById('video');
+  const playOverlay = document.getElementById('playOverlay');
+  let pc = null;
+  let dataChannel = null;
+  let heartbeatInterval = null;
+
+  // Extract game_id from URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const gameType = urlParams.get('type');
+  const gameId = urlParams.get('id');
+  // Flag to track if the pointer is locked
+  let isPointerLocked = false;
+
+  // Function to initiate the connection and start playback
+  async function startPlayback() {
+    // Disable further clicks on the playOverlay
+    playOverlay.onclick = null;
+
+    // Show loading indicator
+    playOverlay.classList.remove('play-icon');
+    playOverlay.classList.add('loading-spinner');
+    playOverlay.style.cursor = 'wait';
+
+    // Fetch TURN credentials
+    const turnResponse = await fetch('turn-credentials');
+    const turnConfig = await turnResponse.json();
+
+    // Add ICE server configuration with temporary credentials
+    pc = new RTCPeerConnection({
+      iceServers: [
+        {
+          urls: turnConfig.stun_urls,
+          username: turnConfig.username,
+          credential: turnConfig.credential
+        },
+        {
+          urls: turnConfig.turn_urls,
+          username: turnConfig.username,
+          credential: turnConfig.credential
+        }
+      ]
+    });
+
+    // Create data channel for controls
+    dataChannel = pc.createDataChannel('controls');
+
+    // Add a video transceiver to receive video from the server
+    pc.addTransceiver('video', { direction: 'recvonly' });
+
+    dataChannel.onopen = () => {
+      heartbeatInterval = setInterval(() => {
+        if (dataChannel?.readyState === 'open') {
+          dataChannel.send(JSON.stringify({ type: 'heartbeat' }));
+        }
+      }, 1000);
+    };
+
+    pc.ontrack = (event) => {
+      console.log('Received track:', event);
+      const track = event.track;
+      console.log('Track state:', track.readyState); // Should be 'live'
+      if (event.streams && event.streams[0]) {
+        video.srcObject = event.streams[0];
+        console.log('Video stream set to video element.');
+        // Hide the overlay once the video starts playing
+        playOverlay.style.display = 'none';
+
+        // Add pointer lock request to the video element
+        video.onclick = () => {
+          video.requestPointerLock();
+        };
+      } else {
+        console.error('No streams found in the track event.');
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log('ICE Connection State:', pc.iceConnectionState);
+      if (pc.iceConnectionState === 'disconnected' || 
+          pc.iceConnectionState === 'failed' || 
+          pc.iceConnectionState === 'closed') {
+        cleanup();
+        playOverlay.style.display = 'block';
+        playOverlay.innerHTML = '<span style="font-size: 48px;">⚠️</span> Connection Lost';
+        playOverlay.style.cursor = 'pointer';
+        playOverlay.classList.remove('loading-spinner');
+        playOverlay.onclick = startPlayback;
+      }
+    };
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log('New ICE candidate:', event.candidate);
+      } else {
+        console.log('All ICE candidates have been sent.');
+      }
+    };
+
+    // Create an offer
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    // Send the offer to the server with the game ID
+    const response = await fetch(`offer/${gameType}/${gameId}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        sdp: pc.localDescription.sdp,
+        type: pc.localDescription.type
+      }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // Check if the response is OK and parse it as JSON
+    if (response.ok) {
+      const answer = await response.json();
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    } else {
+      console.error('Failed to fetch the answer:', response.statusText);
+
+      // Display a friendly error message with an icon
+      playOverlay.innerHTML = '<span style="font-size: 48px;">⚠️</span> Error';
+      playOverlay.style.cursor = 'pointer';
+      playOverlay.classList.remove('loading-spinner');
+
+      // Re-enable the click handler to allow retry
+      playOverlay.onclick = () => {
+        startPlayback();
+      };
+    }
+
+    // Add event listeners for keyboard input
+    document.addEventListener('keydown', (event) => {
+      // Release pointer lock when Escape is pressed
+      if (event.key === 'Escape') {
+        document.exitPointerLock();
+      }
+      // Prevent default action for spacebar and arrow keys when pointer is locked
+      if (isPointerLocked && (
+        event.key === ' ' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowLeft' ||
+        event.key === 'ArrowRight'
+      )) {
+        event.preventDefault();
+      }
+      console.log('keydown', event.keyCode);
+      if (dataChannel && dataChannel.readyState === 'open') {
+        dataChannel.send(JSON.stringify({
+          type: 'keydown',
+          key: event.keyCode
+        }));
+      }
+    });
+
+    document.addEventListener('keyup', (event) => {
+      console.log('keyup', event.keyCode);
+      if (dataChannel && dataChannel.readyState === 'open') {
+        dataChannel.send(JSON.stringify({
+          type: 'keyup',
+          key: event.keyCode
+        }));
+      }
+    });
+
+    // Add event listeners for mouse input
+    document.addEventListener('mousemove', (event) => {
+      if (isPointerLocked && dataChannel && dataChannel.readyState === 'open') {
+        dataChannel.send(JSON.stringify({
+          type: 'mousemove',
+          movementX: event.movementX,
+          movementY: event.movementY
+        }));
+      }
+    });
+
+    document.addEventListener('mousedown', (event) => {
+      if (isPointerLocked && dataChannel && dataChannel.readyState === 'open') {
+        dataChannel.send(JSON.stringify({
+          type: 'mousedown',
+          button: event.button
+        }));
+      }
+    });
+
+    document.addEventListener('mouseup', (event) => {
+      if (isPointerLocked && dataChannel && dataChannel.readyState === 'open') {
+        dataChannel.send(JSON.stringify({
+          type: 'mouseup',
+          button: event.button
+        }));
+      }
+    });
+  }
+
+  // Modify the playOverlay click handler
+  playOverlay.onclick = () => {
+    startPlayback();
+  };
+
+  // Event listener to track pointer lock state
+  document.addEventListener('pointerlockchange', () => {
+    isPointerLocked = document.pointerLockElement === video;
+  });
+
+  function cleanup() {
+    console.log('Cleaning up game view...');
+    
+    // Remove all event listeners first
+    // document.removeEventListener('keydown', handleKeyDown);
+    // document.removeEventListener('keyup', handleKeyUp);
+    // document.removeEventListener('mousemove', handleMouseMove);
+    // document.removeEventListener('mousedown', handleMouseDown);
+    // document.removeEventListener('mouseup', handleMouseUp);
+    // document.removeEventListener('pointerlockchange', handlePointerLockChange);
+    
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
+    
+    if (dataChannel) {
+      dataChannel.close();
+      dataChannel = null;
+    }
+    
+    if (pc) {
+      pc.close();
+      pc = null;
+    }
+
+    if (video && video.srcObject) {
+      video.srcObject.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
+      video.srcObject = null;
+    }
+    
+    // Reset UI elements
+    if (playOverlay) {
+      playOverlay.style.display = 'block';
+      playOverlay.innerHTML = '';
+      playOverlay.classList.add('play-icon');
+      playOverlay.classList.remove('loading-spinner');
+      playOverlay.style.cursor = 'pointer';
+      playOverlay.onclick = startPlayback;
+    }
+
+    console.log('Cleanup completed');
+  }
+
+  window.addEventListener('beforeunload', cleanup);
+  document.addEventListener('astro:before-swap', cleanup);
+  document.addEventListener('astro:after-swap', () => {
+    console.log('Page transition detected, running cleanup...');
+    cleanup();
+  });
+</script>
+
+<style>
+  /* Ensure the video element is visible */
+  #video {
+    width: 100%;
+    height: auto;
+    background-color: black;
+  }
+
+  /* Style for the play overlay */
+  #playOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 48px;
+  }
+
+  /* Play icon */
+  .play-icon::before {
+    content: '▶';
+  }
+
+  /* Loading spinner */
+  .loading-spinner::before {
+    content: '';
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    display: block;
+    margin: auto;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Container styles */
+  #videoContainer {
+    position: relative;
+    width: 100%;
+    height: auto;
+    margin: 0 auto;
+  }
+</style>

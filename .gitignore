@@ -1,0 +1,10 @@
+__pycache__
+.vscode
+.idea
+.DS_Store
+dweam_web/public/thumbnails/*.gif
+astrowind
+dataset
+*/dump.rdb
+*.env
+.cache-data/

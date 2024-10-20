@@ -1,0 +1,102 @@
+---
+import GameInfo from './GameInfo.astro';
+
+interface Props {
+  games: Array<any>; // Define the structure of your game objects
+}
+
+const game_list = Astro.props.games;
+---
+
+<div class="container mx-auto px-4">
+  <div class="mb-6">
+    <input 
+      type="text" 
+      id="search-input" 
+      placeholder="Search games..." 
+      class="w-full max-w-md border border-gray-800 dark:border-gray-300 rounded px-4 py-2 bg-white text-black dark:bg-gray-800 dark:text-white mx-auto block"
+    />
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="games-grid">
+    {game_list.map(game => (
+      <div class="game-container relative rounded-lg shadow-md overflow-hidden" key={`${game.type}/${game.id}`} data-gamename={game.title ? game.title : game.id.toLowerCase()}>
+        <a href={`/game?type=${game.type}&id=${game.id}`}>
+          <video 
+            muted 
+            preload="metadata" 
+            class="w-full h-64 object-cover video-thumb"
+          >
+            <source src={`/thumbnails/${game.type}_${game.id}.webm`} type="video/webm" />
+            <source src={`/thumbnails/${game.type}_${game.id}.mp4`} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <GameInfo game={game} />
+        </a>
+      </div>
+    ))}
+    
+    <!-- <div class="game-container relative rounded-lg shadow-md overflow-hidden">
+      <div class="w-full h-64 bg-gray-800 flex items-center justify-center">
+        <button 
+          class="text-white font-semibold text-lg cursor-not-allowed relative group"
+          disabled
+        >
+          Upload Your Own
+          <span class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Coming Soon
+          </span>
+        </button>
+      </div>
+    </div> -->
+  </div>
+
+  <script>
+    const videos = document.querySelectorAll('.video-thumb');
+
+    videos.forEach(video => {
+      video.addEventListener('mouseenter', () => {
+        video.play();
+      });
+
+      video.addEventListener('mouseleave', () => {
+        video.pause();
+        video.currentTime = 0;
+      });
+    });
+
+    // Add search functionality
+    const searchInput = document.getElementById('search-input');
+    const gameContainers = document.querySelectorAll('.game-container');
+
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.toLowerCase();
+
+      gameContainers.forEach(container => {
+        const gameName = container.dataset.gamename;
+        if (!gameName) {
+          return;
+        }
+        if (gameName.toLowerCase().includes(query)) {
+          container.style.display = '';
+        } else if (gameName) { // Only hide if it's a game container, not the "Upload Your Own" container
+          container.style.display = 'none';
+        }
+      });
+    });
+
+    // Add event listener to force page reload on game link click
+    document.querySelectorAll('.game-container a').forEach(link => {
+      link.addEventListener('click', async (event) => {
+        event.preventDefault();
+        console.log('Navigating to:', link.href);
+        try {
+          window.location.href = link.href;
+        } catch (error) {
+          console.error('Navigation failed:', error);
+          window.location.reload();
+        }
+      });
+    });
+  </script>
+</div>
