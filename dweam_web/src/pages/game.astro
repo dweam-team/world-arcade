@@ -7,218 +7,117 @@ const metadata = {
   title: 'Loading...',
   description: '',
 };
+
+let gameData = null;
+
+try {
+  const urlParams = new URLSearchParams(Astro.url.search);
+  const gameId = urlParams.get('id');
+  const gameType = urlParams.get('type');
+
+  if (gameId && gameType) {
+    const base_url = import.meta.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
+    const response = await fetch(`${base_url}/game_info/${gameType}/${gameId}`);
+    if (response.ok) {
+      gameData = await response.json();
+      metadata.title = gameData.name || 'Game';
+    } else {
+      console.error('Failed to fetch game', response.status, response.statusText);
+    }
+  } else {
+    console.error('No game selected');
+  }
+} catch (error) {
+  console.error('Error fetching game:', error);
+}
 ---
 <Layout metadata={metadata}>
   <div class="flex flex-col gap-8 max-w-6xl mx-auto px-4 mt-8" id="main-content">
-    <h1 id="game-title" class="text-3xl font-bold mb-4">Loading...</h1>
+    <h1 id="game-title" class="text-3xl font-bold mb-4">{gameData ? gameData.name : 'Loading...'}</h1>
     <div class="flex gap-8">
       <div id="controls-section" class="w-1/3">
-        <!-- Controls will be dynamically inserted here -->
+        {gameData && gameData.buttons ? (
+          <div class="flex gap-4">
+            <div class="w-80 shrink-0">
+              <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                <h2 class="text-xl font-bold mb-4">Controls</h2>
+                <div class="space-y-2">
+                  {Object.entries(gameData.buttons).map(([action, key]) => (
+                    <div class="flex justify-between items-center">
+                      <span class="flex items-center">
+                        <span class="inline-block w-6 text-center">{action.split(' ')[0]}</span>
+                        <span class="ml-2">{action.split(' ').slice(1).join(' ')}</span>
+                      </span>
+                      <span class="font-mono">{key}</span>
+                    </div>
+                  ))}
+                </div>
+                <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">Click on the game to play, press Escape to release the mouse.</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p>No controls available.</p>
+        )}
       </div>
-      <div id="game-view" class="flex-grow hidden">
+      <div id="game-view" class="flex-grow {gameData ? '' : 'hidden'}">
         <GameView />
       </div>
     </div>
     <div id="game-info-description-section" class="mt-8">
-      <!-- Game information and description will be dynamically inserted here -->
+      {gameData ? (
+        <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+          <div class="flex justify-between items-start mb-4">
+            <h2 class="text-2xl font-bold">{gameData.title || gameData.id}</h2>
+            <a
+              href="https://discord.gg/w9tNTbfg2b"
+              class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+              target="_blank"
+            >
+              Report Issue
+            </a>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <p class="text-gray-600 dark:text-gray-300 whitespace-pre-line">{gameData.description || 'No description available.'}</p>
+              <div class="mt-4 flex flex-wrap gap-2">
+                {gameData.tags?.length > 0 && gameData.tags.map(tag => (
+                  <span class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div class="space-y-3 text-sm">
+              {gameData.author && (
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">Created by</span>
+                  <span class="font-medium">{gameData.author}</span>
+                </div>
+              )}
+              {gameData.buildDate && (
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">Built on</span>
+                  <span class="font-medium">{new Date(gameData.buildDate).toLocaleDateString()}</span>
+                </div>
+              )}
+              {gameData.repo_link && (
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">Repository</span>
+                  <a href={gameData.repo_link} class="font-medium text-blue-600 dark:text-blue-400 break-words">
+                    {gameData.repo_link}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        '<!-- Game information and description will be dynamically inserted here -->'
+      )}
     </div>
   </div>
   <div id="error-message" class="hidden max-w-2xl mx-auto px-4 mt-8 text-center">
     <!-- Error message will be inserted here -->
   </div>
 </Layout>
-
-<script>
-  function renderGameUI(gameData) {
-    const gameTitle = document.getElementById('game-title');
-    const controlsSection = document.getElementById('controls-section');
-    const gameInfoDescriptionSection = document.getElementById('game-info-description-section');
-    const gameView = document.getElementById('game-view');
-    
-    gameTitle.textContent = gameData.name;
-    controlsSection.innerHTML = renderControlsSection(gameData);
-    gameInfoDescriptionSection.innerHTML = renderGameInformationSection(gameData);
-    
-    // Show the GameView
-    gameView.classList.remove('hidden');
-  }
-
-  function renderControlsSection(gameData) {
-    return `
-      <div class="flex gap-4">
-        <div class="w-80 shrink-0">
-          <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-            <h2 class="text-xl font-bold mb-4">Controls</h2>
-            ${gameData.buttons ? renderButtons(gameData.buttons) : '<p>No controls available.</p>'}
-            <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">Click on the game to play, press Escape to release the mouse.</p>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderButtons(buttons) {
-    return `
-      <div class="space-y-2">
-        ${Object.entries(buttons).map(([action, key]) => `
-          <div class="flex justify-between items-center">
-            <span class="flex items-center">
-              <span class="inline-block w-6 text-center">${action.split(' ')[0]}</span>
-              <span class="ml-2">${action.split(' ').slice(1).join(' ')}</span>
-            </span>
-            <span class="font-mono">${key}</span>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
-
-  function renderGameInformationSection(gameData) {
-    const name = gameData.title ? gameData.title : gameData.id;
-    const description = gameData.description ? gameData.description : 'No description available.';
-    return `
-      <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
-        <div class="flex justify-between items-start mb-4">
-          <h2 class="text-2xl font-bold">${name}</h2>
-          <a 
-            href="https://discord.gg/w9tNTbfg2b"
-            class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-            target="_blank"
-          >
-            Report Issue
-          </a>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <p class="text-gray-600 dark:text-gray-300 whitespace-pre-line">${description}</p>
-            <div class="mt-4 flex flex-wrap gap-2">
-              ${gameData.tags?.length > 0 ? `
-                ${gameData.tags.map(tag => `
-                  <span class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm">
-                    ${tag}
-                  </span>
-                `).join('')}
-              ` : ''}
-            </div>
-          </div>
-          <div class="space-y-3 text-sm">
-            ${gameData.author ? `
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">Created by</span>
-                <span class="font-medium">${gameData.author}</span>
-              </div>
-            ` : ''}
-            ${gameData.buildDate ? `
-              <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">Built on</span>
-                <span class="font-medium">${new Date(gameData.buildDate).toLocaleDateString()}</span>
-              </div>
-            ` : ''}
-            ${gameData.repo_link ? `
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">Repository</span>
-                <a href="${gameData.repo_link}" class="font-medium text-blue-600 dark:text-blue-400 break-words">
-                  ${gameData.repo_link}
-                </a>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function showError(message) {
-    console.error('Showing error:', message);
-    const mainContent = document.getElementById('main-content');
-    const errorMessage = document.getElementById('error-message');
-    const gameView = document.getElementById('game-view');
-    
-    if (mainContent) mainContent.style.display = 'none';
-    if (gameView) gameView.classList.add('hidden');
-    if (errorMessage) {
-      errorMessage.classList.remove('hidden');
-      errorMessage.innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-        <strong class="font-bold">Error:</strong>
-        <span class="block sm:inline"> ${message}</span>
-      </div>`;
-    }
-  }
-
-  async function fetchGame() {
-    console.log('Fetching game data...');
-    const mainContent = document.getElementById('main-content');
-    const errorMessage = document.getElementById('error-message');
-    const gameView = document.getElementById('game-view');
-    
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const gameId = urlParams.get('id');
-      const gameType = urlParams.get('type');
-      
-      if (!gameId || !gameType) {
-        showError('No game selected');
-        return;
-      }
-
-      // Show loading state
-      if (mainContent) mainContent.style.display = 'block';
-      if (errorMessage) errorMessage.classList.add('hidden');
-      
-      console.log(`Fetching game info for ${gameType}/${gameId}`);
-      
-      // Add timeout to fetch
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-      
-      try {
-        const response = await fetch(`/game_info/${gameType}/${gameId}`, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'Cache-Control': 'no-cache'
-          }
-        });
-        
-        clearTimeout(timeout);
-        console.log('Response received:', response.status);
-        
-        if (response.ok) {
-          const gameData = await response.json();
-          console.log('Game data received:', gameData);
-          renderGameUI(gameData);
-          if (gameView) gameView.classList.remove('hidden');
-        } else {
-          console.error('Server responded with:', response.status);
-          const text = await response.text();
-          console.error('Response text:', text);
-          showError(`Game not found (${response.status})`);
-        }
-      } catch (fetchError) {
-        if (fetchError.name === 'AbortError') {
-          console.error('Request timed out');
-          showError('Request timed out - server not responding');
-        } else {
-          throw fetchError;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching game:', error);
-      showError(`Failed to load game: ${error.message}`);
-    }
-  }
-
-  // Remove any existing event listeners
-  const existingHandler = window._fetchGameHandler;
-  if (existingHandler) {
-    document.removeEventListener('astro:page-load', existingHandler);
-    document.removeEventListener('astro:after-swap', existingHandler);
-  }
-
-  // Store the new handler
-  window._fetchGameHandler = fetchGame;
-
-  // Add new event listeners
-  document.addEventListener('astro:page-load', window._fetchGameHandler);
-  document.addEventListener('astro:after-swap', window._fetchGameHandler);
-</script>
