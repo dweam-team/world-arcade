@@ -1,0 +1,23 @@
+# Node modules
+node_modules
+**/node_modules
+
+# Build output
+dist
+build
+
+# Development files
+.git
+.gitignore
+.env
+.env.*
+*.log
+.DS_Store
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Don't ignore package files
+!package*.json
+!pnpm-lock.yaml 

@@ -56,9 +56,7 @@ try {
               </div>
             </div>
           </div>
-        ) : (
-          <p>No controls available.</p>
-        )}
+        ) : null}
       </div>
       <div id="game-view" class="flex-grow {gameData ? '' : 'hidden'}">
         <GameView />
@@ -112,9 +110,7 @@ try {
             </div>
           </div>
         </div>
-      ) : (
-        '<!-- Game information and description will be dynamically inserted here -->'
-      )}
+      ) : null}
     </div>
   </div>
   <div id="error-message" class="hidden max-w-2xl mx-auto px-4 mt-8 text-center">

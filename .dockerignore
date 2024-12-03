@@ -33,3 +33,7 @@ astrowind
 dataset
 
 .cache-data/
+
+# Don't ignore package files
+!package*.json
+!pnpm-lock.yaml 

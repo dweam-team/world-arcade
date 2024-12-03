@@ -11,10 +11,13 @@ import icon from 'astro-icon';
 import compress from 'astro-compress';
 import type { AstroIntegration } from 'astro';
 import yaml from '@rollup/plugin-yaml';
+import react from '@astrojs/react';
 
 import astrowind from './vendor/integration';
 
 import { readingTimeRemarkPlugin, responsiveTablesRehypePlugin, lazyImagesRehypePlugin } from './src/utils/frontmatter';
+
+import node from '@astrojs/node';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -70,10 +73,13 @@ export default defineConfig({
     astrowind({
       config: './src/config.yaml',
     }),
+
+    react(),
   ],
 
   image: {
     domains: ['cdn.pixabay.com'],
+    remotePatterns: [{ protocol: "https" }],
   },
 
   markdown: {
@@ -85,25 +91,28 @@ export default defineConfig({
     resolve: {
       alias: {
         '~': path.resolve(__dirname, './src'),
-        // 'games_config': path.resolve(__dirname, '../games_config.yaml'),
       },
     },
     server: {
+      port: 4321,
+      host: true,
       proxy: {
         '/offer': {
           target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
-          // changeOrigin: true,
         },
         '/game_info': {
           target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
-          // changeOrigin: true,
         },
         '/turn-credentials': {
           target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
-          // changeOrigin: true,
         },
       },
     },
     plugins: [yaml()],
+    envPrefix: ['PUBLIC_', 'INTERNAL_'],
   },
+
+  adapter: node({
+    mode: 'standalone',
+  }),
 });
