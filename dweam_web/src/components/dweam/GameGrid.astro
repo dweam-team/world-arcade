@@ -21,7 +21,7 @@ const game_list = Astro.props.games;
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="games-grid">
     {game_list.map(game => (
       <div class="game-container relative rounded-lg shadow-md overflow-hidden" key={`${game.type}/${game.id}`} data-gamename={game.title ? game.title : game.id.toLowerCase()}>
-        <a href={`/game?type=${game.type}&id=${game.id}`}>
+        <a href={`/game/${game.type}/${game.id}`}>
           <video 
             muted 
             preload="metadata" 

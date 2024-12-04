@@ -22,7 +22,7 @@ if (csgoIndex > -1) {
     <div class="swiper-wrapper">
       {sortedGames.map(game => (
         <div class="swiper-slide relative game-container carousel-slide">
-          <a href={`/game?type=${game.type}&id=${game.id}`} class="block w-full h-full">
+          <a href={`/game/${game.type}/${game.id}`} class="block w-full h-full">
             <video 
               muted 
               preload="metadata" 

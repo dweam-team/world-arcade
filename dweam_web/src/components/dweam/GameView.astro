@@ -1,5 +1,10 @@
 ---
+interface Props {
+  gameType: string;
+  gameId: string;
+}
 
+const { gameType, gameId } = Astro.props;
 ---
 
 <div class="flex-grow rounded-lg shadow-md overflow-hidden">
@@ -9,17 +14,13 @@
   </div>
 </div>
 
-<script>
+<script define:vars={{ gameType, gameId }}>
   const video = document.getElementById('video');
   const playOverlay = document.getElementById('playOverlay');
   let pc = null;
   let dataChannel = null;
   let heartbeatInterval = null;
 
-  // Extract game_id from URL parameters
-  const urlParams = new URLSearchParams(window.location.search);
-  const gameType = urlParams.get('type');
-  const gameId = urlParams.get('id');
   // Flag to track if the pointer is locked
   let isPointerLocked = false;
 
@@ -34,7 +35,7 @@
     playOverlay.style.cursor = 'wait';
 
     // Fetch TURN credentials
-    const turnResponse = await fetch('turn-credentials');
+    const turnResponse = await fetch('/turn-credentials');
     const turnConfig = await turnResponse.json();
 
     // Add ICE server configuration with temporary credentials
@@ -113,7 +114,7 @@
     await pc.setLocalDescription(offer);
 
     // Send the offer to the server with the game ID
-    const response = await fetch(`offer/${gameType}/${gameId}`, {
+    const response = await fetch(`/offer/${gameType}/${gameId}`, {
       method: 'POST',
       body: JSON.stringify({
         sdp: pc.localDescription.sdp,
