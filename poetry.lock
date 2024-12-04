@@ -1975,10 +1975,8 @@ tensorflow-cpu = "*"
 torchvision = "*"
 
 [package.source]
-type = "git"
-url = "https://github.com/dweam-team/lucid-v1"
-reference = "master"
-resolved_reference = "a7df7e59b772dd970ed6aef410a3cce44a2b577a"
+type = "directory"
+url = "lucid-v1"
 
 [[package]]
 name = "markdown"
@@ -4778,4 +4776,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.13"
-content-hash = "fa284f2c6427130c99e2e3ba15704f7fe68ac830c8a79f888ad4f138360576c8"
+content-hash = "d7cd66559793e3aa715f2f245d9d1d45fe2cf3bd58b9fd17dd983e82f0767c70"

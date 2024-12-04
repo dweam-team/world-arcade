@@ -21,7 +21,7 @@ structlog = "^24.4.0"
 # Add more games here!
 diamond_atari = { git = "https://github.com/dweam-team/diamond", branch = "main" }
 diamond_csgo = { git = "https://github.com/dweam-team/diamond", branch = "csgo" }
-lucid_v1 = { git = "https://github.com/dweam-team/lucid-v1", branch = "master" }
+lucid_v1 = { path = "lucid-v1" }
 
 [tool.poetry.group.dev.dependencies]
 pyright = "^1.1.389"

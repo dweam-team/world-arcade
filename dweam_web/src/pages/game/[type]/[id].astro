@@ -59,7 +59,7 @@ try {
         {gameData ? <ParamsPanel gameType={gameData.type} gameId={gameData.id} /> : null}
       </div>
       </div>
-      <div id="game-view" class="flex-grow {gameData ? '' : 'hidden'}">
+      <div id="game-view" class={`flex-grow ${gameData && gameData.buttons ? '' : 'hidden'}`}>
         <GameView gameType={type} gameId={id} />
       </div>
     </div>
@@ -118,4 +118,4 @@ try {
   <div id="error-message" class="hidden max-w-2xl mx-auto px-4 mt-8 text-center">
     <!-- Error message will be inserted here -->
   </div>
-</Layout> 
+</Layout>

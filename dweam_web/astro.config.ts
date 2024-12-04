@@ -106,6 +106,9 @@ export default defineConfig({
         '/turn-credentials': {
           target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
         },
+        '/params': {
+          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
+        },
       },
     },
     plugins: [yaml()],

@@ -66,6 +66,7 @@ def configure_logging(pretty=True, additional_processors=None, level=None):
     logging.getLogger("aiobotocore").setLevel(library_log_level)
     logging.getLogger("aiortc").setLevel(library_log_level)
     logging.getLogger("jax").setLevel(library_log_level)
+    logging.getLogger("aioice").setLevel(library_log_level)
 
     processors = additional_processors + [
         structlog.stdlib.add_log_level,  # add log level

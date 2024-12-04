@@ -89,8 +89,7 @@ const { gameType, gameId } = Astro.props;
 
     pc.oniceconnectionstatechange = () => {
       console.log('ICE Connection State:', pc.iceConnectionState);
-      if (pc.iceConnectionState === 'disconnected' || 
-          pc.iceConnectionState === 'failed' || 
+      if (pc.iceConnectionState === 'failed' || 
           pc.iceConnectionState === 'closed') {
         cleanup();
         playOverlay.style.display = 'block';
@@ -129,6 +128,12 @@ const { gameType, gameId } = Astro.props;
     if (response.ok) {
       const answer = await response.json();
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      
+      const sessionId = answer.sessionId;
+      // Dispatch custom event with session ID
+      window.dispatchEvent(new CustomEvent('gameSessionReady', {
+        detail: { sessionId }
+      }));
     } else {
       console.error('Failed to fetch the answer:', response.statusText);
 
@@ -265,10 +270,16 @@ const { gameType, gameId } = Astro.props;
     console.log('Cleanup completed');
   }
 
-  window.addEventListener('beforeunload', cleanup);
-  document.addEventListener('astro:before-swap', cleanup);
+  window.addEventListener('beforeunload', () => {
+    console.log('Page transition detected (before unload), running cleanup...');
+    cleanup();
+  });
+  document.addEventListener('astro:before-swap', () => {
+    console.log('Page transition detected (before swap), running cleanup...');
+    cleanup();
+  });
   document.addEventListener('astro:after-swap', () => {
-    console.log('Page transition detected, running cleanup...');
+    console.log('Page transition detected (after swap), running cleanup...');
     cleanup();
   });
 </script>

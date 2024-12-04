@@ -2,6 +2,8 @@ import asyncio
 import json
 import os
 import uuid
+from dweam.models import ParamsUpdate
+from pydantic import ValidationError
 import torch
 from typing_extensions import assert_never
 from time import time
@@ -274,7 +276,8 @@ async def offer(
     # Return the answer
     return JSONResponse(content={
         "sdp": pc.localDescription.sdp,
-        "type": pc.localDescription.type
+        "type": pc.localDescription.type,
+        "sessionId": session_id
     })
 
 @app.get("/health")
@@ -362,3 +365,49 @@ def handle_game_input(log: BoundLogger, data: dict) -> None:
     else:
         log.error("Unknown message type", type=data['type'])
         raise ValueError(f"Unknown message type: {data['type']}")
+
+
+@app.get('/game/{type}/{id}/params/schema')
+async def get_params_schema(
+    type: str,
+    id: str,
+    log: BoundLogger = Depends(logger_dependency)
+) -> dict:
+    """Get JSON schema for game parameters"""
+    game_info = games.get(type, {}).get(id)
+    if not game_info:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    return game_info._implementation.Params.model_json_schema()
+
+
+@app.post("/params/{session_id}")
+async def update_game_params(
+    request: Request,
+    session_id: str = Path(...),
+    log: BoundLogger = Depends(logger_dependency),
+):
+    if session_id not in active_games:
+        raise HTTPException(status_code=404, detail="Game session not found")
+    heartbeat = active_games[session_id]
+
+    params = await request.json()
+
+    # Parse the parameters
+    try:
+        params_model = heartbeat.game.Params.model_validate(params['params'])
+    except ValidationError as e:
+        log.error("Invalid game parameters", 
+                 session_id=session_id, 
+                 error=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    try:
+        # Update the game parameters
+        heartbeat.game.on_params_update(params_model)
+        return {"status": "success"}
+    except Exception as e:
+        log.error("Error updating game parameters", 
+                 session_id=session_id, 
+                 error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))

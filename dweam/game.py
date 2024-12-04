@@ -13,6 +13,24 @@ from dweam.models import GameInfo
 
 class Game:
     game_info: ClassVar[GameInfo | list[GameInfo]]
+    
+    class Params(BaseModel):
+        pass
+
+    def __new__(cls, *args, **kwargs):
+        # Validate that all parameters have defaults at class creation time
+        missing_defaults = []
+        for field_name, field in cls.Params.model_fields.items():
+            if field.default is None and field.default_factory is None:
+                missing_defaults.append(field_name)
+        
+        if missing_defaults:
+            raise ValueError(
+                f"All parameter fields must have default values in {cls.__name__}.Params. "
+                f"Missing defaults for: {', '.join(missing_defaults)}"
+            )
+        
+        return super().__new__(cls)
 
     def __init__(
         self, 
@@ -35,6 +53,7 @@ class Game:
         self.game = game
         self.fps = fps
         self.device = device
+        self.params = type(self).Params()
 
         pygame.init()
         self.clock = pygame.time.Clock()
@@ -86,6 +105,12 @@ class Game:
         Handle mouse motion
         """
         pass
+
+    def on_params_update(self, new_params: Params) -> None:
+        """
+        Handle parameter updates
+        """
+        self.params = new_params
 
     def start(self) -> None:
         """
@@ -154,6 +179,7 @@ class Game:
                 self.on_mouse_motion(self.mouse_motion)
 
             if not self.paused and not self.one_step_queued:
+                # self.log.debug("Initiating game step")
                 surface = self.step()
                 
                 # Put new frame in buffer

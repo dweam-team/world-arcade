@@ -22,6 +22,12 @@ class GameInfo(BaseModel):
     buttons: dict[str, str] | None = Field(default=None, description="Mapping of button labels to key combinations")
 
 
+class ParamsUpdate(BaseModel):
+    """Parameter update request"""
+    session_id: str
+    params: dict
+
+
 if __name__ == "__main__":
     # Save the schema to a file
     schema = pydantic.TypeAdapter(list[GameInfo]).json_schema()
