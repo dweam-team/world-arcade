@@ -32,7 +32,7 @@ from dweam.log_config import get_logger
 from dweam.utils.entrypoint import load_games
 from contextlib import asynccontextmanager
 
-from dweam.utils.turn import create_turn_credentials
+from dweam.utils.turn import create_turn_credentials, get_turn_stun_urls
 
 log = get_logger()
 pcs = set()
@@ -43,6 +43,13 @@ games = load_games(log)
 def logger_dependency() -> BoundLogger:
     global log
     return log
+
+
+def is_local_only() -> bool:
+    local_var = os.environ.get('LOCAL_ONLY', '')
+    if local_var == "0":
+        return False
+    return bool(local_var)
 
 
 @asynccontextmanager
@@ -172,6 +179,7 @@ async def offer(
     type: str = Path(...),
     id: str = Path(...),
     log: BoundLogger = Depends(logger_dependency),
+    local_only: bool = Depends(is_local_only),
 ):
     if type not in games:
         raise HTTPException(status_code=404, detail="Game type not found")
@@ -185,27 +193,32 @@ async def offer(
     params = await request.json()
     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 
-    # Generate temporary credentials same as /turn-credentials endpoint
-    turn_credentials = create_turn_credentials(os.environ['TURN_SECRET_KEY'])
-    username = turn_credentials["username"]
-    password = turn_credentials["credential"]
+    if local_only:
+        log.info("Running in local mode without TURN/STUN servers")
+        ice_servers = []  # Empty list for direct connections
+    else:
+        turn_secret = os.environ.get('TURN_SECRET_KEY')
+        if turn_secret is None:
+            log.error("Running in server mode but TURN_SECRET_KEY is not set")
+            raise HTTPException(status_code=500, detail="TURN server configuration missing")
 
-    # Use the same URL for both STUN and TURN
-    turn_base_url = os.environ.get('INTERNAL_TURN_URL', 'localhost:3478')
-    turn_url = f'turn:{turn_base_url}'
-    stun_url = f'stun:{turn_base_url}'
-    ice_servers = [
-        RTCIceServer(
-            urls=[stun_url],
-            username=username,
-            credential=password
-        ),
-        RTCIceServer(
-            urls=[turn_url],
-            username=username,
-            credential=password
-        )
-    ]
+        turn_credentials = create_turn_credentials(turn_secret)
+        turn_url, stun_url = get_turn_stun_urls()
+
+        ice_servers = [
+            RTCIceServer(
+                urls=[stun_url],
+                username=turn_credentials["username"],
+                credential=turn_credentials["credential"]
+            ),
+            RTCIceServer(
+                urls=[turn_url],
+                username=turn_credentials["username"],
+                credential=turn_credentials["credential"]
+            )
+        ]
+        log.info("Running in server mode with TURN/STUN servers", turn_url=turn_url)
+
     config = RTCConfiguration(iceServers=ice_servers)
     pc = RTCPeerConnection(configuration=config)
     session_id = str(uuid.uuid4())[:8]
@@ -285,18 +298,26 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.get("/turn-credentials")
-async def get_turn_credentials(request: Request):
-    # Get credentials from environment variables
-    turn_credentials = create_turn_credentials(os.environ['TURN_SECRET_KEY'])
+async def turn_credentials(
+    request: Request,
+    log: BoundLogger = Depends(logger_dependency),
+    local_only: bool = Depends(is_local_only),
+):
+    if local_only:
+        log.info("TURN credentials requested in local mode")
+        raise HTTPException(status_code=404, detail="TURN server not available in local mode")
 
-    url = request.base_url.hostname
-    turn_url = f"turn:{url}:3478"
-    stun_url = f"stun:{url}:3478"
-    
+    turn_secret = os.environ.get('TURN_SECRET_KEY')
+    if turn_secret is None:
+        log.error("TURN_SECRET_KEY not set in server mode")
+        raise HTTPException(status_code=500, detail="TURN server configuration missing")
+
+    credentials = create_turn_credentials(turn_secret)
+    turn_base_url = request.base_url.hostname
+    turn_url, stun_url = get_turn_stun_urls(turn_base_url)
+
     return {
-        "username": turn_credentials["username"],
-        "credential": turn_credentials["credential"],
-        "ttl": turn_credentials["ttl"],
+        **credentials,  # Include username, credential, ttl
         "turn_urls": [turn_url],
         "stun_urls": [stun_url]
     }

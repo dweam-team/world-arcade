@@ -2,6 +2,8 @@ import base64
 import hashlib
 import hmac
 from time import time
+import os
+from fastapi import Request
 
 
 def create_turn_credentials(turn_secret_key: str, expiration: int = 24*3600) -> dict:
@@ -19,3 +21,18 @@ def create_turn_credentials(turn_secret_key: str, expiration: int = 24*3600) -> 
         "credential": password,
         "ttl": expiration
     }
+
+
+def get_turn_stun_urls(turn_base_url: str | None = None) -> tuple[str, str]:
+    """Get TURN and STUN URLs from environment or request
+    
+    Args:
+        turn_base_url: Base URL for the TURN server
+        
+    Returns:
+        Tuple of (turn_url, stun_url)
+    """
+    if turn_base_url is None:
+        turn_base_url = os.environ.get('INTERNAL_TURN_URL', "localhost:3478")
+        
+    return (f"turn:{turn_base_url}", f"stun:{turn_base_url}")

@@ -34,25 +34,33 @@ const { gameType, gameId } = Astro.props;
     playOverlay.classList.add('loading-spinner');
     playOverlay.style.cursor = 'wait';
 
-    // Fetch TURN credentials
-    const turnResponse = await fetch('/turn-credentials');
-    const turnConfig = await turnResponse.json();
+    let iceServers = [];
+    
+    try {
+      // Try to fetch TURN credentials, if it fails we assume local mode
+      const turnResponse = await fetch('/turn-credentials');
+      if (turnResponse.ok) {
+        const turnConfig = await turnResponse.json();
+        console.log('turnConfig', turnConfig);
+        iceServers = [
+          {
+            urls: turnConfig.stun_urls,
+            username: turnConfig.username,
+            credential: turnConfig.credential
+          },
+          {
+            urls: turnConfig.turn_urls,
+            username: turnConfig.username,
+            credential: turnConfig.credential
+          }
+        ];
+      }
+    } catch (error) {
+      console.log('Running in local mode without TURN server');
+    }
 
-    // Add ICE server configuration with temporary credentials
-    pc = new RTCPeerConnection({
-      iceServers: [
-        {
-          urls: turnConfig.stun_urls,
-          username: turnConfig.username,
-          credential: turnConfig.credential
-        },
-        {
-          urls: turnConfig.turn_urls,
-          username: turnConfig.username,
-          credential: turnConfig.credential
-        }
-      ]
-    });
+    // Create RTCPeerConnection with or without ICE servers
+    pc = new RTCPeerConnection({ iceServers });
 
     // Create data channel for controls
     dataChannel = pc.createDataChannel('controls');
