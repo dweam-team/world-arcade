@@ -3,7 +3,7 @@ import validator from '@rjsf/validator-ajv8';
 import { log } from 'node_modules/astro/dist/core/logger/core';
 import { useEffect, useState } from 'react';
 
-function ParamsForm({ schema, gameType, gameId }) {
+function ParamsForm({ schema, uiSchema, gameType, gameId }) {
   const [isClient, setIsClient] = useState(false);
   const [sessionId, setSessionId] = useState(null);
 
@@ -46,8 +46,9 @@ function ParamsForm({ schema, gameType, gameId }) {
       </style>
       <Form
         schema={schema}
+        uiSchema={uiSchema}
         validator={validator}
-        disabled={!sessionId}
+        // disabled={!sessionId}
         onSubmit={async ({ formData }, originalEvent) => {
           originalEvent.preventDefault();
           if (!sessionId) return;

@@ -1,4 +1,4 @@
 from dweam.game import Game
-from dweam.models import GameInfo
+from dweam.models import GameInfo, Field
 
-__all__ = ["Game", "GameInfo"]
+__all__ = ["Game", "GameInfo", "Field"]

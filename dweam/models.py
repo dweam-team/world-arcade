@@ -1,12 +1,17 @@
 import json
 from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from pydantic import BaseModel, ConfigDict, PrivateAttr, Field as PydanticField
 import pydantic
 
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+
+def Field(*args, ui_schema: dict | None = None, **kwargs):
+    if ui_schema:
+        kwargs["json_schema_extra"] = {"_ui_schema": ui_schema}
+    return PydanticField(*args, **kwargs)
 
 class GameInfo(BaseModel):
     _implementation: Any = PrivateAttr(None)
