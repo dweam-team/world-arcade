@@ -75,13 +75,19 @@ const { gameType, gameId } = Astro.props;
       if (event.streams && event.streams[0]) {
         video.srcObject = event.streams[0];
         console.log('Video stream set to video element.');
-        // Hide the overlay once the video starts playing
-        playOverlay.style.display = 'none';
+        
+        // Add loadeddata event listener to wait for first frame
+        video.addEventListener('loadeddata', () => {
+          console.log('First frame received, video ready to play');
+          // Hide the overlay once the first frame is loaded
+          playOverlay.style.display = 'none';
 
-        // Add pointer lock request to the video element
-        video.onclick = () => {
-          video.requestPointerLock();
-        };
+          // Add pointer lock request to the video element
+          video.onclick = () => {
+            video.requestPointerLock();
+          };
+        }, { once: true }); // Use once:true to automatically remove the listener after first trigger
+        
       } else {
         console.error('No streams found in the track event.');
       }
