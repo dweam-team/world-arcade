@@ -97,7 +97,7 @@ jobs:
         echo Installing production dependencies...
         copy dweam_web\package.json package.json
         copy dweam_web\pnpm-lock.yaml pnpm-lock.yaml
-        pnpm install --prod --frozen-lockfile
+        pnpm install --prod --frozen-lockfile --shamefully-hoist
         
         echo Copying Node.js built-in modules...
         robocopy "C:\Program Files\nodejs\node_modules" "node_modules" /E /NFL /NDL /NJH /NJS /nc /ns /np || exit 0
@@ -127,13 +127,14 @@ jobs:
     - name: Build Windows executable
       shell: cmd
       run: |
-        # echo Building release version...
-        # poetry run pyinstaller main.py --name dweam --onefile --noconsole ^
-        #   --add-data "frontend\server;frontend\server" ^
-        #   --add-data "frontend\client;frontend\client" ^
-        #   --add-binary "node.exe;." ^
-        #   --add-data "node_modules;node_modules" ^
-        #   --log-level DEBUG
+        REM echo Building release version...
+        REM poetry run pyinstaller main.py --name dweam --onefile --noconsole ^
+        REM   --add-data "frontend\server;frontend\server" ^
+        REM   --add-data "frontend\client;frontend\client" ^
+        REM   --add-binary "node.exe;." ^
+        REM   --add-data "node_modules;node_modules" ^
+        REM   --debug all ^
+        REM   --log-level DEBUG
         
         echo Building debug version...
         poetry run pyinstaller main.py --name dweam-debug ^
