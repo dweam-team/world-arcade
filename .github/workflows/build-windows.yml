@@ -84,27 +84,6 @@ jobs:
         poetry install --no-interaction -E local
         poetry add pyinstaller
 
-    - name: Prepare frontend files
-      shell: cmd
-      run: |
-        if exist frontend rmdir /s /q frontend
-        mkdir frontend\server
-        mkdir frontend\client
-        
-        echo Copying frontend server files...
-        robocopy "dweam_web\dist\server" "frontend\server" /E /NFL /NDL /NJH /NJS /nc /ns /np || exit 0
-        if not exist frontend\server\entry.mjs (
-          echo Frontend server files not copied correctly
-          exit 1
-        )
-        
-        echo Copying frontend client files...
-        robocopy "dweam_web\dist\client" "frontend\client" /E /NFL /NDL /NJH /NJS /nc /ns /np || exit 0
-        if not exist frontend\client\index.html (
-          echo Frontend client files not copied correctly
-          exit 1
-        )
-
     - name: Prepare Node.js
       shell: cmd
       run: |
@@ -158,12 +137,22 @@ jobs:
         
         echo Building debug version...
         poetry run pyinstaller main.py --name dweam-debug ^
-          --add-data "frontend\server;frontend\server" ^
-          --add-data "frontend\client;frontend\client" ^
+          --add-data "dweam_web\dist\server;frontend\server" ^
+          --add-data "dweam_web\dist\client;frontend\client" ^
           --add-binary "node.exe;." ^
           --add-data "node_modules;node_modules" ^
-          --debug all ^
-          --log-level DEBUG > pyinstaller_build.log 2>&1
+          --log-level INFO > pyinstaller_build.log 2>&1
+
+        echo Verifying build output...
+        dir dist\dweam-debug\_internal\frontend /s
+        if not exist "dist\dweam-debug\_internal\frontend\client" (
+          echo ERROR: Frontend client files are missing from build output!
+          exit 1
+        )
+        if not exist "dist\dweam-debug\_internal\frontend\server" (
+          echo ERROR: Frontend server files are missing from build output!
+          exit 1
+        )
 
         type pyinstaller_build.log
 
