@@ -89,7 +89,8 @@ def wait_for_server(url, timeout=30, interval=0.5):
     while time.time() - start_time < timeout:
         try:
             response = requests.get(url)
-            if response.status_code == 200:
+            # Consider both 200 and 404 as valid responses - they both indicate the server is running
+            if response.status_code in [200, 404]:
                 return True
         except requests.RequestException:
             pass
