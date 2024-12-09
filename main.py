@@ -139,7 +139,11 @@ def run_frontend(host="127.0.0.1", port=4321):
     print(f"Frontend server starting on {host}:{port}")  # Direct console output
     sys.stdout.flush()
     
-    os.environ['INTERNAL_BACKEND_URL'] = f'http://{host}:8080'  # Point frontend to backend
+    # Set required Astro environment variables
+    os.environ['HOST'] = host
+    os.environ['PORT'] = str(port)
+    os.environ['ASTRO_NODE_AUTOSTART'] = 'true'  # Required for Node adapter
+    os.environ['INTERNAL_BACKEND_URL'] = f'http://{host}:8080'
     
     # Get the path to the bundled node.exe and set up environment
     if hasattr(sys, '_MEIPASS'):
@@ -155,63 +159,94 @@ def run_frontend(host="127.0.0.1", port=4321):
             os.environ['PATH'] = f"{node_path};{os.environ['PATH']}"
         else:
             os.environ['PATH'] = node_path
+            
+        # Log the environment setup
+        logger.info(f"Node executable path: {node_exe}")
+        logger.info(f"Node modules path: {node_path}")
+        logger.info(f"PATH: {os.environ['PATH']}")
     else:
-        node_exe = 'node'  # Fall back to system node when not in PyInstaller bundle
+        node_exe = 'node'
+        logger.info("Using system node installation")
     
-    # In PyInstaller bundle, the built server is in frontend/server/entry.mjs
+    # The entry point should be dist/server/entry.mjs
     server_path = os.path.normpath(resource_path(os.path.join('frontend', 'server', 'entry.mjs')))
-    if os.path.exists(server_path):
-        logger.info(f"Starting frontend server from: {server_path}")
-        logger.info(f"Using node from: {node_exe}")
-        logger.info(f"NODE_PATH: {os.environ.get('NODE_PATH', 'not set')}")
+    
+    if not os.path.exists(server_path):
+        logger.error(f"Server entry point not found at: {server_path}")
+        print(f"Error: Server entry point not found at: {server_path}")
+        return
         
-        # Set up environment variables for the frontend server
-        os.environ['HOST'] = host
-        os.environ['PORT'] = str(port)
+    logger.info(f"Starting frontend server from: {server_path}")
+    
+    # Verify node executable exists
+    if not os.path.exists(node_exe):
+        logger.error(f"Node executable not found at: {node_exe}")
+        print(f"Error: Node executable not found at: {node_exe}")
+        return
         
-        try:
-            if os.path.exists(node_exe):
-                # Use subprocess.run with shell=True for Windows path handling
-                import subprocess
-                
-                # Change to the server directory to help with module resolution
-                server_dir = os.path.dirname(server_path)
-                os.chdir(server_dir)
-                
-                cmd = [node_exe, os.path.basename(server_path)]
-                result = subprocess.run(cmd, 
-                                     capture_output=True, 
-                                     text=True,
-                                     cwd=server_dir,
-                                     env=os.environ)
-                
-                if result.returncode != 0:
-                    error_msg = f"Frontend server failed to start with exit code: {result.returncode}"
-                    if result.stderr:
-                        error_msg += f"\nError: {result.stderr}"
-                    logger.error(error_msg)
-                    print(error_msg)  # Direct console output
+    try:
+        # Change to the server directory to help with module resolution
+        server_dir = os.path.dirname(server_path)
+        os.chdir(server_dir)
+        logger.info(f"Changed working directory to: {server_dir}")
+        
+        # List directory contents for debugging
+        logger.info(f"Server directory contents: {os.listdir(server_dir)}")
+        
+        import subprocess
+        
+        # Set production environment for Astro
+        env = os.environ.copy()
+        env['NODE_ENV'] = 'production'
+        
+        # Run node process with real-time output
+        process = subprocess.Popen(
+            [node_exe, os.path.basename(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            cwd=server_dir,
+            env=env
+        )
+        
+        # Log output in real-time
+        def log_output(stream, prefix):
+            for line in stream:
+                line = line.strip()
+                if line:
+                    logger.info(f"{prefix}: {line}")
+                    print(f"{prefix}: {line}")
                     sys.stdout.flush()
-            else:
-                logger.error(f"Node executable not found at: {node_exe}")
-                print(f"Error: Node executable not found at: {node_exe}")
-                return
-        except Exception as e:
-            logger.error(f"Error starting frontend server: {str(e)}", exc_info=True)
-            print(f"Frontend error: {str(e)}")  # Direct console output
-            sys.stdout.flush()
-    else:
-        logger.error(f"Frontend server not found at {server_path}")
-        logger.info(f"Current directory: {os.getcwd()}")
-        logger.info(f"Directory contents: {os.listdir('.')}")
-        if hasattr(sys, '_MEIPASS'):
-            logger.info(f"PyInstaller bundle contents: {os.listdir(sys._MEIPASS)}")
-            frontend_dir = os.path.join(sys._MEIPASS, 'frontend')
-            if os.path.exists(frontend_dir):
-                logger.info(f"Frontend directory contents: {os.listdir(frontend_dir)}")
-                server_dir = os.path.join(frontend_dir, 'server')
-                if os.path.exists(server_dir):
-                    logger.info(f"Server directory contents: {os.listdir(server_dir)}")
+        
+        import threading
+        stdout_thread = threading.Thread(target=log_output, args=(process.stdout, "Frontend stdout"))
+        stderr_thread = threading.Thread(target=log_output, args=(process.stderr, "Frontend stderr"))
+        
+        stdout_thread.daemon = True
+        stderr_thread.daemon = True
+        
+        stdout_thread.start()
+        stderr_thread.start()
+        
+        # Don't wait for process to complete - Astro server should keep running
+        # Just check if it started successfully
+        time.sleep(2)  # Give it a moment to start
+        
+        if process.poll() is not None:
+            # Process ended too quickly - that's an error
+            logger.error(f"Frontend server failed to start (exited with code {process.returncode})")
+            print(f"Frontend server failed to start (exited with code {process.returncode})")
+            return
+            
+        # Keep the process reference so it can be terminated later
+        return process
+            
+    except Exception as e:
+        logger.error(f"Error starting frontend server: {str(e)}", exc_info=True)
+        print(f"Frontend error: {str(e)}")
+        sys.stdout.flush()
+        return None
 
 def main():
     # Set up logging and debug console first thing
@@ -235,10 +270,13 @@ def main():
     backend_process.daemon = True
     backend_process.start()
     
-    # Start the frontend SSR server in a separate process
-    frontend_process = multiprocessing.Process(target=run_frontend, args=(host, frontend_port))
-    frontend_process.daemon = True
-    frontend_process.start()
+    # Start the frontend SSR server
+    frontend_process = run_frontend(host=host, port=frontend_port)
+    if frontend_process is None:
+        logger.error("Failed to start frontend server")
+        print("Error: Failed to start frontend server!")
+        sys.stdout.flush()
+        return
     
     # Wait for both servers to be ready
     backend_url = f"http://{host}:{backend_port}"
@@ -284,17 +322,17 @@ def main():
     sys.stdout.flush()
     
     backend_process.terminate()
-    frontend_process.terminate()
+    if frontend_process.poll() is None:  # If process is still running
+        frontend_process.terminate()
+        try:
+            frontend_process.wait(timeout=5)  # Wait up to 5 seconds for graceful shutdown
+        except subprocess.TimeoutExpired:
+            frontend_process.kill()  # Force kill if it doesn't shut down gracefully
     
     # Make sure processes are fully terminated
     backend_process.join(timeout=5)
-    frontend_process.join(timeout=5)
-    
-    # Force kill if they haven't terminated
     if backend_process.is_alive():
         backend_process.kill()
-    if frontend_process.is_alive():
-        frontend_process.kill()
     
     logger.info("Application shutdown complete")
     print("Application shutdown complete")
