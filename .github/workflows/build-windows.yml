@@ -115,36 +115,60 @@ jobs:
           exit 1
         )
         
-        REM Copy required Node.js files
-        mkdir node_modules
+        echo Installing production dependencies...
+        copy dweam_web\package.json package.json
+        copy dweam_web\pnpm-lock.yaml pnpm-lock.yaml
+        pnpm install --prod --frozen-lockfile
+        
         echo Copying Node.js built-in modules...
         robocopy "C:\Program Files\nodejs\node_modules" "node_modules" /E /NFL /NDL /NJH /NJS /nc /ns /np || exit 0
         
-        echo Copying project dependencies...
-        robocopy "dweam_web\node_modules" "node_modules" /E /NFL /NDL /NJH /NJS /nc /ns /np || exit 0
+        echo Verifying critical dependencies...
+        if not exist "node_modules\react" (
+          echo ERROR: React module is missing!
+          dir /s node_modules
+          exit 1
+        )
+        if not exist "node_modules\@astrojs" (
+          echo ERROR: Astro modules are missing!
+          dir /s node_modules
+          exit 1
+        )
+        
+        echo Pruning unnecessary files...
+        for /d %%d in (node_modules\*) do (
+          if exist "%%d\.git" rmdir /s /q "%%d\.git"
+          if exist "%%d\test" rmdir /s /q "%%d\test"
+          if exist "%%d\tests" rmdir /s /q "%%d\tests"
+          if exist "%%d\docs" rmdir /s /q "%%d\docs"
+          if exist "%%d\example" rmdir /s /q "%%d\example"
+          if exist "%%d\examples" rmdir /s /q "%%d\examples"
+        )
 
     - name: Build Windows executable
       shell: cmd
       run: |
-        echo Building release version...
-        poetry run pyinstaller main.py --name dweam --onefile --noconsole ^
-          --add-data "frontend\server;frontend\server" ^
-          --add-data "frontend\client;frontend\client" ^
-          --add-binary "node.exe;." ^
-          --add-data "node_modules;node_modules"
+        # echo Building release version...
+        # poetry run pyinstaller main.py --name dweam --onefile --noconsole ^
+        #   --add-data "frontend\server;frontend\server" ^
+        #   --add-data "frontend\client;frontend\client" ^
+        #   --add-binary "node.exe;." ^
+        #   --add-data "node_modules;node_modules" ^
+        #   --log-level DEBUG
         
         echo Building debug version...
         poetry run pyinstaller main.py --name dweam-debug --onefile ^
           --add-data "frontend\server;frontend\server" ^
           --add-data "frontend\client;frontend\client" ^
           --add-binary "node.exe;." ^
-          --add-data "node_modules;node_modules"
+          --add-data "node_modules;node_modules" ^
+          --log-level DEBUG
 
-    - name: Upload release artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: dweam-windows
-        path: dist/dweam.exe
+    # - name: Upload release artifact
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: dweam-windows
+    #     path: dist/dweam.exe
 
     - name: Upload debug artifact
       uses: actions/upload-artifact@v4
