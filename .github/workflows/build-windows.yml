@@ -157,12 +157,15 @@ jobs:
         #   --log-level DEBUG
         
         echo Building debug version...
-        poetry run pyinstaller main.py --name dweam-debug --onefile ^
+        poetry run pyinstaller main.py --name dweam-debug ^
           --add-data "frontend\server;frontend\server" ^
           --add-data "frontend\client;frontend\client" ^
           --add-binary "node.exe;." ^
           --add-data "node_modules;node_modules" ^
-          --log-level DEBUG
+          --debug all ^
+          --log-level DEBUG > pyinstaller_build.log 2>&1
+
+        type pyinstaller_build.log
 
     # - name: Upload release artifact
     #   uses: actions/upload-artifact@v4
@@ -174,4 +177,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: dweam-windows-debug
-        path: dist/dweam-debug.exe
+        path: dist/dweam-debug/*
