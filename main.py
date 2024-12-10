@@ -10,6 +10,7 @@ import requests
 import ctypes
 from fastapi.staticfiles import StaticFiles
 from dweam.server import app
+import socket
 
 def setup_logging():
     """Set up logging to both file and debug console"""
@@ -135,7 +136,7 @@ def run_backend(host="127.0.0.1", port=8080):
         print(f"Backend error: {str(e)}")  # Direct console output
         sys.stdout.flush()
 
-def run_frontend(host="127.0.0.1", port=4321):
+def run_frontend(host="127.0.0.1", port=4321, backend_port=8080):
     """Run the frontend SSR server"""
     # Ensure each process has its own console output
     create_debug_console()
@@ -149,7 +150,7 @@ def run_frontend(host="127.0.0.1", port=4321):
     os.environ['HOST'] = host
     os.environ['PORT'] = str(port)
     os.environ['ASTRO_NODE_AUTOSTART'] = 'true'  # Required for Node adapter
-    os.environ['INTERNAL_BACKEND_URL'] = f'http://{host}:8080'
+    os.environ['INTERNAL_BACKEND_URL'] = f'http://{host}:{backend_port}'
     
     # Get the path to node executable and modules
     if hasattr(sys, '_MEIPASS'):
@@ -260,6 +261,14 @@ def run_frontend(host="127.0.0.1", port=4321):
         sys.stdout.flush()
         return None
 
+def find_open_port(start_port: int, count_limit: int = 10000) -> int:
+    """Find a list of consecutive available ports starting from start_port."""
+    for port in range(start_port, start_port + count_limit):  # Search within a range of 10000 ports
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('localhost', port)) != 0:
+                return port
+    raise RuntimeError("Unable to find consecutive available ports")
+
 def main():
     # Set up logging and debug console first thing
     log_file = setup_logging()
@@ -274,8 +283,20 @@ def main():
     logger.info("Starting Dweam application...")
     
     host = "127.0.0.1"
-    backend_port = 8080
-    frontend_port = 4321
+    
+    # Find consecutive available ports for backend and frontend
+    try:
+        backend_port = find_open_port(8080)
+        frontend_port = find_open_port(4321)
+    except RuntimeError as e:
+        logger.error(f"Failed to find available ports: {str(e)}")
+        print(f"Error: {str(e)}")
+        sys.stdout.flush()
+        return
+    
+    logger.info(f"Using ports - Backend: {backend_port}, Frontend: {frontend_port}")
+    print(f"Using ports - Backend: {backend_port}, Frontend: {frontend_port}")
+    sys.stdout.flush()
     
     # Start the backend server in a separate process
     backend_process = multiprocessing.Process(target=run_backend, args=(host, backend_port))
@@ -283,7 +304,7 @@ def main():
     backend_process.start()
     
     # Start the frontend SSR server
-    frontend_process = run_frontend(host=host, port=frontend_port)
+    frontend_process = run_frontend(host=host, port=frontend_port, backend_port=backend_port)
     if frontend_process is None:
         logger.error("Failed to start frontend server")
         print("Error: Failed to start frontend server!")
