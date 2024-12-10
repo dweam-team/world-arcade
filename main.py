@@ -195,14 +195,6 @@ def run_frontend(host="127.0.0.1", port=4321, backend_port=8080):
         
         import subprocess
         
-        # Set production environment for Astro
-        env = os.environ.copy()
-        env['NODE_ENV'] = 'production'
-        env['HOST'] = host
-        env['PORT'] = str(port)
-        env['ASTRO_NODE_AUTOSTART'] = 'true'  # Required for Node adapter
-        env['INTERNAL_BACKEND_URL'] = f'http://{host}:{backend_port}'
-
         # Run node process with real-time output
         process = subprocess.Popen(
             [node_exe, server_path],

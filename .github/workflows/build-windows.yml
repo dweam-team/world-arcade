@@ -16,16 +16,31 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-        cache: 'pip'
-
     - name: Setup pnpm
       uses: pnpm/action-setup@v2
       with:
         version: 8
+
+    # TODO figure out how properly format the key for this without introducing weird bugs again
+    # - name: Cache frontend build
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: ./dweam_web/dist
+    #     key: ${{ runner.os }}-pnpm-build-${{ hashFiles('dweam_web/src/**') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-pnpm-build-
+
+    - name: Install frontend
+      working-directory: dweam_web
+      shell: cmd
+      run: |
+        pnpm install
+    
+    - name: Build frontend
+      working-directory: dweam_web
+      shell: cmd
+      run: |
+        pnpm build
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -33,6 +48,12 @@ jobs:
         node-version: '22'
         cache: 'pnpm'
         cache-dependency-path: './dweam_web/pnpm-lock.yaml'
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
 
     - name: Install Visual Studio Build Tools
       uses: microsoft/setup-msbuild@v2
@@ -53,30 +74,6 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install poetry poetry-pyinstaller-plugin
         poetry config installer.parallel false
-
-    # - name: Cache frontend build
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: ./dweam_web/dist
-    #     key: ${{ runner.os }}-pnpm-build-${{ hashFiles('dweam_web/src/**') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-pnpm-build-
-
-    - name: Build frontend
-      shell: cmd
-      run: |
-        cd dweam_web
-        pnpm install
-        pnpm run build
-        if not exist dist\server (
-          echo Frontend build failed - server directory missing
-          exit 1
-        )
-        if not exist dist\client (
-          echo Frontend build failed - client directory missing
-          exit 1
-        )
-        cd ..
 
     - name: Install Python dependencies
       run: |
