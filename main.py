@@ -114,16 +114,6 @@ def run_backend(host="127.0.0.1", port=8080):
     print(f"Backend server starting on {host}:{port}")  # Direct console output
     sys.stdout.flush()
     
-    # Mount the frontend static files
-    static_files_dir = resource_path(os.path.join('frontend', 'client'))
-    if os.path.exists(static_files_dir):
-        logger.info(f"Mounting frontend files from: {static_files_dir}")
-        app.mount("/", StaticFiles(directory=static_files_dir, html=True), name="frontend")
-    else:
-        logger.error(f"Frontend files not found at {static_files_dir}")
-        logger.info(f"Current directory: {os.getcwd()}")
-        logger.info(f"Directory contents: {os.listdir('.')}")
-    
     # Configure uvicorn logging for non-TTY environments
     log_config = uvicorn.config.LOGGING_CONFIG
     log_config["formatters"]["default"]["use_colors"] = False
