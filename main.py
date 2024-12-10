@@ -84,7 +84,7 @@ def resource_path(relative_path):
         if relative_path.startswith('frontend'):
             base_path = os.path.join(os.path.dirname(__file__), 'dweam_web')
             # Strip 'frontend/' from the path since we're already in the web directory
-            relative_path = os.path.join(*relative_path.split('/')[1:])
+            relative_path = os.path.join(*relative_path.split('/')) if relative_path else ''
         else:
             base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
