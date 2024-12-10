@@ -2,7 +2,7 @@
 import Layout from '../layouts/PageLayout.astro';
 import Header from '../components/widgets/Header.astro';
 import Hero from '../components/widgets/Hero.astro';
-import { DISCORD_LINK } from '../components/constants';
+import { DISCORD_LINK, GITHUB_LINK } from '../components/constants';
 
 import GameCarouselReact from '~/components/dweam/GameCarouselReact';
 import GameGridReact from '~/components/dweam/GameGridReact';
@@ -25,11 +25,15 @@ const metadata = {
     ]}
   >
     <Fragment slot="title">
-      Games at your Fingertips
+      The Platform for Fully Generative Games
     </Fragment>
 
     <Fragment slot="subtitle">
-      No downloads. No more code. Just neural architectures.
+      No Game Engine. Endless Possibilities. Turning Dweams into Reality.
+    </Fragment>
+
+    <Fragment slot="description">
+      For latest updates, join our Discord server below.
     </Fragment>
   </Hero>
 
