@@ -14,7 +14,7 @@ let gameData = null;
 
 try {
   if (id && type) {
-    const base_url = import.meta.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
+    const base_url = process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
     const response = await fetch(`${base_url}/game_info/${type}/${id}`);
     if (response.ok) {
       gameData = await response.json();
