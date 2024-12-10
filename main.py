@@ -1,5 +1,6 @@
 import multiprocessing
 import os
+import subprocess
 import sys
 import time
 import webview
@@ -133,7 +134,7 @@ def run_frontend(host="127.0.0.1", port=4321, backend_port=8080):
     
     logger = logging.getLogger('frontend')
     logger.info(f"Starting frontend server on {host}:{port}")
-    print(f"Frontend server starting on {host}:{port}")  # Direct console output
+    print(f"Frontend server starting on {host}:{port}")
     sys.stdout.flush()
     
     # Get the path to node executable and modules
@@ -154,19 +155,21 @@ def run_frontend(host="127.0.0.1", port=4321, backend_port=8080):
         # Use local node_modules
         node_path = os.path.join(os.path.dirname(__file__), 'dweam_web', 'node_modules')
         
-    # Set NODE_PATH to help Node.js find modules
-    os.environ['NODE_PATH'] = node_path
+    # Set up Node.js environment
+    env = os.environ.copy()
+    env['NODE_PATH'] = node_path
+    env['PATH'] = f"{node_path}{os.pathsep}{env.get('PATH', '')}"
+    env['NODE_ENV'] = 'production'
+    env['HOST'] = host
+    env['PORT'] = str(port)
+    env['ASTRO_NODE_AUTOSTART'] = 'true'
+    env['INTERNAL_BACKEND_URL'] = f'http://{host}:{backend_port}'
+    env['NODE_OPTIONS'] = '--no-warnings'  # Reduce noise in logs
     
-    # Add node_modules to PATH
-    if 'PATH' in os.environ:
-        os.environ['PATH'] = f"{node_path}{os.pathsep}{os.environ['PATH']}"
-    else:
-        os.environ['PATH'] = node_path
-        
     # Log the environment setup
     logger.info(f"Node executable path: {node_exe}")
     logger.info(f"Node modules path: {node_path}")
-    logger.info(f"PATH: {os.environ['PATH']}")
+    logger.info(f"PATH: {env['PATH']}")
     
     # The entry point should be in the server directory
     if hasattr(sys, '_MEIPASS'):
@@ -202,7 +205,7 @@ def run_frontend(host="127.0.0.1", port=4321, backend_port=8080):
 
         # Run node process with real-time output
         process = subprocess.Popen(
-            [node_exe, os.path.basename(server_path)],
+            [node_exe, server_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
