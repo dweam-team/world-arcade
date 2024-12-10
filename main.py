@@ -136,12 +136,6 @@ def run_frontend(host="127.0.0.1", port=4321, backend_port=8080):
     print(f"Frontend server starting on {host}:{port}")  # Direct console output
     sys.stdout.flush()
     
-    # Set required Astro environment variables
-    os.environ['HOST'] = host
-    os.environ['PORT'] = str(port)
-    os.environ['ASTRO_NODE_AUTOSTART'] = 'true'  # Required for Node adapter
-    os.environ['INTERNAL_BACKEND_URL'] = f'http://{host}:{backend_port}'
-    
     # Get the path to node executable and modules
     if hasattr(sys, '_MEIPASS'):
         # Bundled environment
@@ -201,6 +195,11 @@ def run_frontend(host="127.0.0.1", port=4321, backend_port=8080):
         # Set production environment for Astro
         env = os.environ.copy()
         env['NODE_ENV'] = 'production'
+        env['HOST'] = host
+        env['PORT'] = str(port)
+        env['ASTRO_NODE_AUTOSTART'] = 'true'  # Required for Node adapter
+        env['INTERNAL_BACKEND_URL'] = f'http://{host}:{backend_port}'
+
         
         # Run node process with real-time output
         process = subprocess.Popen(
