@@ -80,7 +80,13 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.path.abspath(".")
+        # In dev environment, look for files relative to dweam_web directory
+        if relative_path.startswith('frontend'):
+            base_path = os.path.join(os.path.dirname(__file__), 'dweam_web')
+            # Strip 'frontend/' from the path since we're already in the web directory
+            relative_path = os.path.join(*relative_path.split('/')[1:])
+        else:
+            base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
 def wait_for_server(url, timeout=30, interval=0.5):
@@ -145,31 +151,43 @@ def run_frontend(host="127.0.0.1", port=4321):
     os.environ['ASTRO_NODE_AUTOSTART'] = 'true'  # Required for Node adapter
     os.environ['INTERNAL_BACKEND_URL'] = f'http://{host}:8080'
     
-    # Get the path to the bundled node.exe and set up environment
+    # Get the path to node executable and modules
     if hasattr(sys, '_MEIPASS'):
+        # Bundled environment
         base_dir = sys._MEIPASS
         node_exe = os.path.normpath(os.path.join(base_dir, 'node.exe'))
         node_path = os.path.normpath(os.path.join(base_dir, 'node_modules'))
-        
-        # Set NODE_PATH to help Node.js find modules
-        os.environ['NODE_PATH'] = node_path
-        
-        # Add node_modules to PATH
-        if 'PATH' in os.environ:
-            os.environ['PATH'] = f"{node_path};{os.environ['PATH']}"
-        else:
-            os.environ['PATH'] = node_path
-            
-        # Log the environment setup
-        logger.info(f"Node executable path: {node_exe}")
-        logger.info(f"Node modules path: {node_path}")
-        logger.info(f"PATH: {os.environ['PATH']}")
     else:
-        node_exe = 'node'
-        logger.info("Using system node installation")
+        # Dev environment - use system node
+        import shutil
+        node_exe = shutil.which('node')
+        if not node_exe:
+            logger.error("Node.js not found. Please install Node.js")
+            print("Error: Node.js not found. Please install Node.js")
+            return
+            
+        # Use local node_modules
+        node_path = os.path.join(os.path.dirname(__file__), 'dweam_web', 'node_modules')
+        
+    # Set NODE_PATH to help Node.js find modules
+    os.environ['NODE_PATH'] = node_path
     
-    # The entry point should be dist/server/entry.mjs
-    server_path = os.path.normpath(resource_path(os.path.join('frontend', 'server', 'entry.mjs')))
+    # Add node_modules to PATH
+    if 'PATH' in os.environ:
+        os.environ['PATH'] = f"{node_path}{os.pathsep}{os.environ['PATH']}"
+    else:
+        os.environ['PATH'] = node_path
+        
+    # Log the environment setup
+    logger.info(f"Node executable path: {node_exe}")
+    logger.info(f"Node modules path: {node_path}")
+    logger.info(f"PATH: {os.environ['PATH']}")
+    
+    # The entry point should be in the server directory
+    if hasattr(sys, '_MEIPASS'):
+        server_path = os.path.normpath(resource_path(os.path.join('frontend', 'server', 'entry.mjs')))
+    else:
+        server_path = os.path.normpath(os.path.join(os.path.dirname(__file__), 'dweam_web', 'dist', 'server', 'entry.mjs'))
     
     if not os.path.exists(server_path):
         logger.error(f"Server entry point not found at: {server_path}")
@@ -178,12 +196,6 @@ def run_frontend(host="127.0.0.1", port=4321):
         
     logger.info(f"Starting frontend server from: {server_path}")
     
-    # Verify node executable exists
-    if not os.path.exists(node_exe):
-        logger.error(f"Node executable not found at: {node_exe}")
-        print(f"Error: Node executable not found at: {node_exe}")
-        return
-        
     try:
         # Change to the server directory to help with module resolution
         server_dir = os.path.dirname(server_path)
