@@ -127,40 +127,24 @@ jobs:
     - name: Build Windows executable
       shell: cmd
       run: |
-        echo Checking source directories...
-        dir dweam_web\dist
-        dir dweam_web\dist\server
-        dir dweam_web\dist\client
-        
         echo Building debug version...
         poetry run pyinstaller main.py --name dweam-debug ^
-          --add-data "dweam_web/dist/server;frontend/server" ^
-          --add-data "dweam_web/dist/client;frontend/client" ^
+          --add-data "dweam_web\dist\server;frontend\server" ^
+          --add-data "dweam_web\dist\client;frontend\client" ^
           --add-binary "node.exe;." ^
           --add-data "node_modules;node_modules" ^
-          --log-level DEBUG > pyinstaller_build.log 2>&1
+          --log-level INFO > pyinstaller_build.log 2>&1
         
-        echo Checking build directory structure...
-        dir dist
-        dir dist\dweam-debug
-        dir dist\dweam-debug\_internal
-        
-        echo Checking frontend files...
-        dir dist\dweam-debug\_internal\frontend
-        
+        echo Verifying build output...
+        dir dist\dweam-debug\_internal\frontend /s
         if not exist "dist\dweam-debug\_internal\frontend\client" (
           echo ERROR: Frontend client files are missing from build output!
-          echo Full contents of dist directory:
-          dir /s dist
           exit 1
         )
         if not exist "dist\dweam-debug\_internal\frontend\server" (
           echo ERROR: Frontend server files are missing from build output!
-          echo Full contents of dist directory:
-          dir /s dist
           exit 1
         )
-
         type pyinstaller_build.log
 
     # - name: Upload release artifact
