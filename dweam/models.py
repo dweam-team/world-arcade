@@ -33,6 +33,10 @@ class ParamsUpdate(BaseModel):
     params: dict
 
 
+class StatusResponse(BaseModel):
+    is_loading: bool
+
+
 if __name__ == "__main__":
     # Save the schema to a file
     schema = pydantic.TypeAdapter(list[GameInfo]).json_schema()

@@ -6,8 +6,11 @@ from dweam.game import GameInfo
 import importlib_metadata
 
 
-def load_games(log: BoundLogger) -> dict[str, dict[str, GameInfo]]:
-    games = defaultdict(dict)
+def load_games(log: BoundLogger, games: defaultdict[str, dict[str, GameInfo]] | None = None) -> dict[str, dict[str, GameInfo]]:
+    """Load all games from installed packages"""
+    if games is None:
+        games = defaultdict(dict)
+
     game_entrypoints = defaultdict(dict)
     entrypoints = importlib_metadata.entry_points(group="dweam")
     for entry_point in entrypoints.select(name="game"):

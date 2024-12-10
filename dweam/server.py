@@ -1,8 +1,9 @@
 import asyncio
+from collections import defaultdict
 import json
 import os
 import uuid
-from dweam.models import ParamsUpdate
+from dweam.models import ParamsUpdate, StatusResponse
 from pydantic import ValidationError
 import torch
 from typing_extensions import assert_never
@@ -13,7 +14,7 @@ import base64
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional, Any
+from typing import Literal, Optional, Any
 
 from structlog.stdlib import BoundLogger
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Path
@@ -37,8 +38,21 @@ from dweam.utils.turn import create_turn_credentials, get_turn_stun_urls
 log = get_logger()
 pcs = set()
 
-# load game entrypoints
-games = load_games(log)
+is_loading = True
+games = defaultdict(dict)
+
+
+# load game entrypoints in a background thread
+def _load_games():
+    global games
+    global is_loading
+    load_games(log, games)  # Update the existing dictionary instead of reassigning
+    is_loading = False
+
+
+thread = threading.Thread(target=_load_games)
+thread.start()
+
 
 def logger_dependency() -> BoundLogger:
     global log
@@ -102,6 +116,11 @@ class GameVideoTrack(VideoStreamTrack):
         # Assign timestamp
         new_frame.pts, new_frame.time_base = await self.next_timestamp()
         return new_frame
+
+
+@app.get('/status')
+async def status() -> StatusResponse:
+    return StatusResponse(is_loading=is_loading)
 
 
 # Endpoint to serve the entire games list
