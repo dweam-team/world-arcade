@@ -127,31 +127,37 @@ jobs:
     - name: Build Windows executable
       shell: cmd
       run: |
-        REM echo Building release version...
-        REM poetry run pyinstaller main.py --name dweam --onefile --noconsole ^
-        REM   --add-data "frontend\server;frontend\server" ^
-        REM   --add-data "frontend\client;frontend\client" ^
-        REM   --add-binary "node.exe;." ^
-        REM   --add-data "node_modules;node_modules" ^
-        REM   --debug all ^
-        REM   --log-level DEBUG
+        echo Checking source directories...
+        dir dweam_web\dist
+        dir dweam_web\dist\server
+        dir dweam_web\dist\client
         
         echo Building debug version...
         poetry run pyinstaller main.py --name dweam-debug ^
-          --add-data "dweam_web\dist\server;frontend\server" ^
-          --add-data "dweam_web\dist\client;frontend\client" ^
+          --add-data "dweam_web/dist/server;frontend/server" ^
+          --add-data "dweam_web/dist/client;frontend/client" ^
           --add-binary "node.exe;." ^
           --add-data "node_modules;node_modules" ^
-          --log-level INFO > pyinstaller_build.log 2>&1
-
-        echo Verifying build output...
-        dir dist\dweam-debug\_internal\frontend /s
+          --log-level DEBUG > pyinstaller_build.log 2>&1
+        
+        echo Checking build directory structure...
+        dir dist
+        dir dist\dweam-debug
+        dir dist\dweam-debug\_internal
+        
+        echo Checking frontend files...
+        dir dist\dweam-debug\_internal\frontend
+        
         if not exist "dist\dweam-debug\_internal\frontend\client" (
           echo ERROR: Frontend client files are missing from build output!
+          echo Full contents of dist directory:
+          dir /s dist
           exit 1
         )
         if not exist "dist\dweam-debug\_internal\frontend\server" (
           echo ERROR: Frontend server files are missing from build output!
+          echo Full contents of dist directory:
+          dir /s dist
           exit 1
         )
 
