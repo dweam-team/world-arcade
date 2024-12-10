@@ -109,6 +109,9 @@ export default defineConfig({
         '/params': {
           target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
         },
+        '/status': {
+          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
+        },
       },
     },
     plugins: [yaml()],

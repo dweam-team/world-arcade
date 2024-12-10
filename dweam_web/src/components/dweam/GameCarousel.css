@@ -1,0 +1,58 @@
+/* Navigation buttons */
+.swiper-button-prev,
+.swiper-button-next {
+  position: absolute;
+  margin-top: 0;
+  top: 0;
+  width: 160px;
+  height: calc(100% - 110px);
+  transition: background 0.3s;
+  z-index: 10;
+}
+
+.swiper-button-prev {
+  left: 0;
+}
+
+.swiper-button-next {
+  right: 0;
+}
+
+.swiper-button-prev::after,
+.swiper-button-next::after {
+  padding-top: 20%;
+  font-size: 30px;
+  color: #fff;
+}
+
+.swiper-button-prev::after {
+  margin-right: auto;
+  padding-left: 20px;
+}
+
+.swiper-button-next::after {
+  margin-left: auto;
+  padding-right: 10px;
+}
+
+/* Progressive shadow effect on video */
+.carousel-container .swiper-button-prev:hover ~ .swiper .swiper-slide::before,
+.carousel-container .swiper-button-next:hover ~ .swiper .swiper-slide::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.carousel-container .swiper-button-prev:hover ~ .swiper .swiper-slide::before {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+}
+
+.carousel-container .swiper-button-next:hover ~ .swiper .swiper-slide::before {
+  left: 80%;
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+} 

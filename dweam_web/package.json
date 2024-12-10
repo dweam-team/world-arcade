@@ -31,6 +31,7 @@
     "@astrolib/analytics": "^0.6.1",
     "@astrolib/seo": "^1.0.0-beta.8",
     "@fontsource-variable/inter": "^5.1.0",
+    "@nanostores/react": "^0.8.2",
     "@rjsf/bootstrap-4": "^5.23.1",
     "@rjsf/core": "^5.17.1",
     "@rjsf/utils": "^5.23.1",
@@ -42,8 +43,10 @@
     "astro-icon": "^1.1.4",
     "limax": "4.1.0",
     "lodash.merge": "^4.6.2",
+    "nanostores": "^0.11.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "swiper": "^11.0.5",
     "tailwind-merge": "^2.5.3",
     "unpic": "^3.18.0"
   },
