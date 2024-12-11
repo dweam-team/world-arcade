@@ -1,10 +1,11 @@
 import { useStore } from '@nanostores/react';
-import { games } from '~/stores/gameStore';
+import { games, isLoading } from '~/stores/gameStore';
 import { useEffect, useRef } from 'react';
 import GameInfo from './GameInfo';
 
 export default function GameGridReact() {
   const gamesList = useStore(games);
+  const $isLoading = useStore(isLoading);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -28,7 +29,11 @@ export default function GameGridReact() {
 
   // Return loading state for both SSR and initial client render
   if (gamesList.length === 0) {
-    return <div className="text-center py-8">Loading games...</div>;
+    if ($isLoading) {
+      return <div className="text-center py-8">Loading games...</div>;
+    } else {
+      return <div className="text-center py-8">No games found</div>;
+    }
   }
 
   return (

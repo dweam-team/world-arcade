@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import { games } from '~/stores/gameStore';
+import { games, isLoading } from '~/stores/gameStore';
 import GameInfo from './GameInfo';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
@@ -9,10 +9,15 @@ import './GameCarousel.css';
 
 export default function GameCarouselReact() {
   const $games = useStore(games);
+  const $isLoading = useStore(isLoading);
 
   // Show loading state for both SSR and initial client render
   if ($games.length === 0) {
-    return <div className="text-center py-8">Loading games...</div>;
+    if ($isLoading) {
+      return <div className="text-center py-8">Loading games...</div>;
+    } else {
+      return <div className="text-center py-8">No games found</div>;
+    }
   }
 
   // Sort games to ensure CS:GO is first, but only if it exists
