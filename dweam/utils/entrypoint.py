@@ -1,23 +1,28 @@
 from collections import defaultdict
-import pkg_resources
+import importlib
 from structlog.stdlib import BoundLogger
 
 from dweam.game import GameInfo
-import importlib_metadata
+
+HARDCODED_ENTRYPOINTS = {
+    "diamond_atari": "diamond_atari.dweam_game:DiamondGame",
+    "diamond_csgo": "diamond_csgo.dweam_game:CSGOGame",
+    "lucid_v1": "lucid_v1.dweam_game:LucidGame",
+}
 
 
 def load_games(log: BoundLogger, games: defaultdict[str, dict[str, GameInfo]] | None = None) -> dict[str, dict[str, GameInfo]]:
-    """Load all games from installed packages"""
+    """Load hardcoded game entrypoints"""
     if games is None:
         games = defaultdict(dict)
 
-    game_entrypoints = defaultdict(dict)
-    entrypoints = importlib_metadata.entry_points(group="dweam")
-    for entry_point in entrypoints.select(name="game"):
+    for entrypoint_name, entrypoint_path in HARDCODED_ENTRYPOINTS.items():
+        module_path, class_name = entrypoint_path.split(":")
         try:
-            game_class = entry_point.load()
+            module = importlib.import_module(module_path)
+            game_class = getattr(module, class_name)
         except Exception as e:
-            log.exception("Error loading game entrypoint", entrypoint=entry_point)
+            log.warning("Failed to load game entrypoint", entrypoint_name=entrypoint_name, error=str(e))
             continue
 
         if isinstance(game_class.game_info, list):
@@ -28,17 +33,13 @@ def load_games(log: BoundLogger, games: defaultdict[str, dict[str, GameInfo]] | 
         for game_info in game_infos:
             game_info._implementation = game_class
             if game_info.id in games[game_info.type]:
-                previous_entrypoint = game_entrypoints[game_info.type][game_info.id]
-                current_entrypoint = entry_point.name
                 log.error(
                     "Game ID already exists for type. Overriding...",
                     type=game_info.type,
                     id=game_info.id,
-                    previous_entrypoint=previous_entrypoint,
-                    new_entrypoint=current_entrypoint,
+                    previous_game=games[game_info.type][game_info.id],
                 )
-            game_entrypoints[game_info.type][game_info.id] = entry_point.name
             games[game_info.type][game_info.id] = game_info
 
-        log.info("Loaded game entrypoint", entrypoint=entry_point)
+        log.info("Loaded game entrypoint", entrypoint=entrypoint_name)
     return games
