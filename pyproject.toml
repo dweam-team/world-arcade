@@ -19,9 +19,9 @@ pyyaml = "^6.0.2"
 structlog = "^24.4.0"
 pywebview = { version = "^4.4.1", optional = true }
 
-# Add more games here!
-diamond_atari = { git = "https://github.com/dweam-team/diamond", branch = "main" }
-diamond_csgo = { git = "https://github.com/dweam-team/diamond", branch = "csgo" }
+# diamond_atari = { git = "https://github.com/dweam-team/diamond", branch = "main" }
+# diamond_csgo = { git = "https://github.com/dweam-team/diamond", branch = "csgo" }
+# lucid_v1 = { path = "lucid-v1" }
 
 [tool.poetry.extras]
 local = ["pywebview"]  # Dependencies needed for local desktop app
