@@ -1,16 +1,21 @@
 import { atom } from 'nanostores';
 
-export interface Game {
-  id: string;
-  name: string;
+export interface GameInfo {
   type: string;
-  title?: string;
-  tags?: string[];
+  id: string;
+  title: string | null;
+  description: string | null;
+  tags: string[] | null;
+  author: string | null;
+  build_date: string | null;
+  repo_link: string | null;
+  buttons: Record<string, string> | null;
 }
 
-export const games = atom<Game[]>([]);
-export const isLoading = atom<boolean>(true);
+export type GameStore = Record<string, Record<string, GameInfo>>;
 
+export const games = atom<GameStore>({});
+export const isLoading = atom<boolean>(true);
 
 // Initialize store
 export async function initializeStore() {
@@ -18,21 +23,16 @@ export async function initializeStore() {
     const statusResponse = await fetch('/status');
     const status = await statusResponse.json();
     isLoading.set(status.is_loading);
-    console.log('Status:', status);
 
     // Get initial games
     const gamesResponse = await fetch('/game_info');
     if (gamesResponse.ok) {
-        const gamesData = await gamesResponse.json();
-        if (Array.isArray(gamesData)) {
-            console.log('Setting games:', gamesData);
-            games.set(gamesData);
-        }
+      const gamesData = await gamesResponse.json();
+      games.set(gamesData);
     }
-    
 
     if (status.is_loading) {
-        startPolling();
+      startPolling();
     }
   } catch (error) {
     console.error('Error initializing store:', error);
@@ -49,9 +49,7 @@ function startPolling() {
       const response = await fetch('/game_info');
       if (response.ok) {
         const gamesData = await response.json();
-        if (Array.isArray(gamesData)) {
-          games.set(gamesData);
-        }
+        games.set(gamesData);
       }
 
       // Stop polling when status is running

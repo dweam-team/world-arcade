@@ -112,6 +112,9 @@ export default defineConfig({
         '/status': {
           target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
         },
+        '/thumb': {
+          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
+        },
       },
     },
     plugins: [yaml()],

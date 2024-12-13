@@ -49,10 +49,10 @@ jobs:
         cache: 'pnpm'
         cache-dependency-path: './dweam_web/pnpm-lock.yaml'
 
-    - name: Set up Python 3.12
+    - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.11'
         cache: 'pip'
 
     - name: Install Visual Studio Build Tools

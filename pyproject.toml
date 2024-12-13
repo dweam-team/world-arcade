@@ -18,6 +18,7 @@ ale-py = "^0.8.1"
 pyyaml = "^6.0.2"
 structlog = "^24.4.0"
 pywebview = { version = "^4.4.1", optional = true }
+tomli = "^2.2.1"
 
 # diamond_atari = { git = "https://github.com/dweam-team/diamond", branch = "main" }
 # diamond_csgo = { git = "https://github.com/dweam-team/diamond", branch = "csgo" }

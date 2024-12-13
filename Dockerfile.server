@@ -6,6 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     xvfb \
     python3-pygame \
+    python3.10-venv \
     git \
     curl \
     build-essential \

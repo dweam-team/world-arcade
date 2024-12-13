@@ -1,14 +1,8 @@
-import pkg from 'react';
-const {CSSProperties} = pkg;
+import type { CSSProperties } from 'react';
+import type { GameInfo as GameInfoType } from '~/stores/gameStore';
 
 interface GameInfoProps {
-  game: {
-    id: string;
-    name: string;
-    type?: string;
-    tags?: string[];
-    title?: string;
-  };
+  game: GameInfoType;
 }
 
 // Define styles as a CSS-in-JS object
@@ -24,7 +18,7 @@ const styles = {
     transform: 'translateY(calc(100% - 50px))',
     transition: 'transform 0.3s ease',
     pointerEvents: 'none',
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   gameName: {
     fontSize: '1.2rem',
@@ -33,7 +27,7 @@ const styles = {
     fontWeight: 'bold',
     lineHeight: 1.2,
     overflowWrap: 'break-word',
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   gameTags: {
     fontSize: '0.875rem',
@@ -44,7 +38,7 @@ const styles = {
     display: 'flex',
     flexWrap: 'wrap',
     gap: '6px',
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   tag: {
     background: 'rgba(255, 255, 255, 0.3)',
@@ -56,11 +50,11 @@ const styles = {
     color: '#ffffff',
     fontWeight: 500,
     textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   typeTag: {
     background: 'rgba(255, 165, 0, 0.1)',
-  } as CSSProperties,
+  } satisfies CSSProperties,
 } as const;
 
 // Add global styles to handle hover states

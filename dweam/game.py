@@ -3,17 +3,14 @@ import threading
 from typing import ClassVar, Protocol
 from dataclasses import dataclass
 from typing import Optional
+from dweam.models import GameInfo
 from pydantic import BaseModel, Field
 import pygame
 from structlog import BoundLogger
 import torch
 
-from dweam.models import GameInfo
-
 
 class Game:
-    game_info: ClassVar[GameInfo | list[GameInfo]]
-    
     class Params(BaseModel):
         pass
 
@@ -36,7 +33,7 @@ class Game:
         self, 
         *,
         log: BoundLogger, 
-        game: GameInfo,
+        game_id: str,
         fps: int,
         device: torch.device,
     ):
@@ -50,7 +47,7 @@ class Game:
             device: Device to run the game on
         """
         self.log = log
-        self.game = game
+        self.game_id = game_id
         self.fps = fps
         self.device = device
         self.params = type(self).Params()

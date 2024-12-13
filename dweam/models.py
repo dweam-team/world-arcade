@@ -1,6 +1,7 @@
 import json
-from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, PrivateAttr, Field as PydanticField
+from typing import Any, Literal, Union
+from pathlib import Path
+from pydantic import BaseModel, ConfigDict, Field as PydanticField, PrivateAttr
 import pydantic
 
 
@@ -13,18 +14,76 @@ def Field(*args, ui_schema: dict | None = None, **kwargs):
         kwargs["json_schema_extra"] = {"_ui_schema": ui_schema}
     return PydanticField(*args, **kwargs)
 
-class GameInfo(BaseModel):
-    _implementation: Any = PrivateAttr(None)
 
-    type: str = Field(description="Used to group games. Shows up in the `{type}/{id}` URL slug.")
-    id: str = Field(description="Unique identifier for the game. Shows up in the `{type}/{id}` URL slug.")
+class BaseSource(StrictModel):
+    """Base class for all dependency sources"""
+    metadata: Path = Field(default=Path("dweam.toml"), description="Path to the package's game metadata file")
+
+
+class PathSource(BaseSource):
+    """Local path source"""
+    path: Path
+
+
+class PyPISource(BaseSource):
+    """PyPI package source"""
+    version: str
+
+
+class BaseGitSource(BaseSource):
+    """Git repository source"""
+    git: str
+    branch: str | None = None
+    tag: str | None = None
+    rev: str | None = None
+
+class GitBranchSource(BaseGitSource):
+    branch: str
+
+
+class GitTagSource(BaseGitSource):
+    tag: str
+
+
+class GitRevSource(BaseGitSource):
+    rev: str
+
+
+# Union type for all sources
+GameSource = PathSource | PyPISource | GitBranchSource | GitTagSource | GitRevSource
+
+
+class GameInfo(StrictModel):
+    """Metadata for a specific game variant"""
     title: str | None = Field(default=None, description="Display name for the game")
     description: str | None = Field(default=None, description="Short description for the game")
     tags: list[str] | None = Field(default=None, description="List of tags for the game")
-    author: str | None = Field(default=None, description="Author of the game")
-    build_date: str | None = Field(default=None, description="Build date of the game")
-    repo_link: str | None = Field(default=None, description="Link to the repository of the game")
     buttons: dict[str, str] | None = Field(default=None, description="Mapping of button labels to key combinations")
+    _metadata: "PackageMetadata | None" = PrivateAttr(None)
+
+    def get_implementation(self) -> type:
+        """Get the game implementation class from the metadata's entrypoint"""
+        if not self._metadata:
+            raise ValueError("Game metadata not set")
+        from dweam.utils.entrypoint import load_game_implementation
+        return load_game_implementation(self._metadata.entrypoint)
+
+
+class PackageMetadata(StrictModel):
+    """Metadata for a game package"""
+    type: str
+    entrypoint: str
+    repo_link: str | None = None
+    thumbnail_dir: str = Field(default="thumbnails", description="Directory containing thumbnail videos (gif/webm/mp4)")
+    games: dict[str, GameInfo]
+    _source: GameSource | None = PrivateAttr(None)
+    _local_dir: Path | None = PrivateAttr(None)
+
+
+class SourceConfig(StrictModel):
+    """Main configuration file model for managing game sources.
+    This configuration lives in dweam-sources.toml and defines where to find game packages."""
+    packages: dict[str, list[GameSource]]
 
 
 class ParamsUpdate(BaseModel):
@@ -38,7 +97,11 @@ class StatusResponse(BaseModel):
 
 
 if __name__ == "__main__":
-    # Save the schema to a file
-    schema = pydantic.TypeAdapter(list[GameInfo]).json_schema()
-    with open("game_list_schema.json", "w") as f:
-        json.dump(schema, f)
+    # Save the schemas
+    sources_schema = pydantic.TypeAdapter(SourceConfig).json_schema()
+    with open("dweam-sources-schema.json", "w") as f:
+        json.dump(sources_schema, f)
+
+    metadata_schema = pydantic.TypeAdapter(GameInfo).json_schema()
+    with open("dweam-metadata-schema.json", "w") as f:
+        json.dump(metadata_schema, f)
