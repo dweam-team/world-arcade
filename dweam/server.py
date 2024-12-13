@@ -41,8 +41,12 @@ def _get_venv_path() -> pathlib.Path:
     
     venv_path = home_dir / "dweam-venv"
     if not venv_path.exists():
+        log.info("Creating virtual environment", venv_path=venv_path)
         venv_path.parent.mkdir(parents=True, exist_ok=True)
         venv.create(venv_path, with_pip=True)
+        log.info("Virtual environment created", venv_path=venv_path)
+    else:
+        log.info("Found existing virtual environment", venv_path=venv_path)
 
     return venv_path
 
