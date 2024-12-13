@@ -8,6 +8,20 @@ from structlog.stdlib import BoundLogger
 from importlib.resources import files
 
 
+class PyInstallerEnvBuilder(venv.EnvBuilder):
+    """Custom EnvBuilder that uses the bundled python.exe when running from PyInstaller"""
+    
+    def ensure_directories(self, env_dir):
+        context = super().ensure_directories(env_dir)
+        if getattr(sys, 'frozen', False):
+            # When running from PyInstaller, use the bundled python.exe
+            python_exe = Path(sys._MEIPASS) / "_internal" / "python.exe"
+            if not python_exe.exists():
+                raise RuntimeError("python.exe not found in PyInstaller bundle")
+            context.executable = str(python_exe)
+        return context
+
+
 def get_venv_path(log: BoundLogger) -> Path:
     """Get and setup the virtual environment path"""
     home_dir = os.environ.get("CACHE_DIR")
@@ -62,16 +76,15 @@ def get_venv_path(log: BoundLogger) -> Path:
 def create_and_setup_venv(path: Path) -> Path:
     """Create a new virtual environment and return its path"""
     try:
-        # Create venv with pip
-        builder = venv.EnvBuilder(
-            with_pip=True,  # Don't try to install pip yet
-            upgrade_deps=False,  # Don't upgrade deps yet
+        builder = PyInstallerEnvBuilder(
+            with_pip=True,
+            upgrade_deps=False,
             clear=True, 
-            symlinks=False  # Avoid symlinks on Windows
+            symlinks=False
         )
         builder.create(path)
         
-        # Get the venv's Python executable
+        # Get the venv's pip executable
         pip_path = path / "Scripts" / "pip.exe" if sys.platform == "win32" else path / "bin" / "pip"
                     
         if not pip_path.exists():

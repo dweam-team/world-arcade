@@ -132,6 +132,10 @@ jobs:
           --add-data "dweam_web\dist\client;frontend\client" ^
           --add-binary "node.exe;." ^
           --add-data "node_modules;node_modules" ^
+          --collect-binaries python ^
+          --hidden-import pip ^
+          --hidden-import setuptools ^
+          --hidden-import wheel ^
           --hidden-import dweam ^
           --collect-all dweam ^
           --log-level INFO > pyinstaller_build.log 2>&1
