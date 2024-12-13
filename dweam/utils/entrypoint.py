@@ -120,11 +120,13 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             
             result = subprocess.run(
                 ["git", "clone", "-b", source.branch, source.git, str(package_dir)],
+                capture_output=True,
                 text=True
             )
             if result.returncode != 0:
-                log.error("Git clone failed")
+                log.error("Git clone failed", stdout=result.stdout, stderr=result.stderr)
                 return None
+            log.debug("Git clone output", stdout=result.stdout, stderr=result.stderr)
             
             ensure_correct_dweam_version(log, pip_path)
             return package_dir

@@ -100,7 +100,7 @@ def create_and_setup_venv(path: Path) -> Path:
         
         return path
     except Exception as e:
-        raise RuntimeError(f"Failed to create virtual environment") from e
+        raise RuntimeError(f"Failed to create virtual environment: {str(e)}") from e
 
 def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path) -> None:
     """Ensure the correct version of dweam is installed in the venv"""
