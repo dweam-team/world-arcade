@@ -17,6 +17,13 @@ export type GameStore = Record<string, Record<string, GameInfo>>;
 export const games = atom<GameStore>({});
 export const isLoading = atom<boolean>(true);
 
+export interface ParamsSchema {
+  schema: Record<string, any>;
+  uiSchema: Record<string, any>;
+}
+
+export const paramsSchema = atom<ParamsSchema | null>(null);
+
 // Initialize store
 export async function initializeStore() {
   try {
@@ -62,7 +69,11 @@ function startPolling() {
   }, 500);
 }
 
-// Initialize store if we're in the browser
+// Listen for game session end to clear params schema
 if (typeof window !== 'undefined') {
+  window.addEventListener('gameSessionEnd', () => {
+    paramsSchema.set(null);
+  });
+  
   initializeStore();
 } 

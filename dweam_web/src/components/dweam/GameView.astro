@@ -111,6 +111,8 @@ const { gameType, gameId } = Astro.props;
         playOverlay.style.cursor = 'pointer';
         playOverlay.classList.remove('loading-spinner');
         playOverlay.onclick = startPlayback;
+        // Dispatch session end event
+        window.dispatchEvent(new CustomEvent('gameSessionEnd'));
       }
     };
 
@@ -280,6 +282,9 @@ const { gameType, gameId } = Astro.props;
       playOverlay.style.cursor = 'pointer';
       playOverlay.onclick = startPlayback;
     }
+
+    // Always dispatch session end event during cleanup
+    window.dispatchEvent(new CustomEvent('gameSessionEnd'));
 
     console.log('Cleanup completed');
   }

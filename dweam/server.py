@@ -319,3 +319,22 @@ async def get_thumbnail(
         raise HTTPException(status_code=404, detail="Thumbnail not found")
     
     return FileResponse(thumbnail_path)
+
+@app.get('/params/{session_id}/schema')
+async def get_params_schema_by_session(
+    session_id: str = Path(...),
+    log: BoundLogger = Depends(logger_dependency),
+) -> dict:
+    """Get JSON schema for game parameters by session ID"""
+    worker = active_workers.get(session_id)
+    if not worker:
+        raise HTTPException(status_code=404, detail="Game session not found")
+    
+    try:
+        schema = await worker.get_params_schema()
+        return schema
+    except Exception as e:
+        log.error("Error getting game parameters schema", 
+                 session_id=session_id, 
+                 error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))

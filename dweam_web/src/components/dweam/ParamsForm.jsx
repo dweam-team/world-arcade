@@ -1,12 +1,14 @@
 import Form from '@rjsf/bootstrap-4';
 import validator from '@rjsf/validator-ajv8';
-import { log } from 'node_modules/astro/dist/core/logger/core';
 import { useEffect, useState } from 'react';
+import { paramsSchema } from '~/stores/gameStore';
+import { useStore } from '@nanostores/react';
 
-function ParamsForm({ schema, uiSchema, gameType, gameId }) {
+function ParamsForm({ gameType, gameId }) {
   const [isClient, setIsClient] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [isDark, setIsDark] = useState(false);
+  const schema = useStore(paramsSchema);
 
   useEffect(() => {
     setIsClient(true);
@@ -57,14 +59,43 @@ function ParamsForm({ schema, uiSchema, gameType, gameId }) {
     });
 
     // Listen for game session ready event
-    const handleSessionReady = (event) => {
-      setSessionId(event.detail.sessionId);
+    const handleSessionReady = async (event) => {
+      const sid = event.detail.sessionId;
+      setSessionId(sid);
+
+      // Fetch schema when session is ready
+      try {
+        const response = await fetch(`/params/${sid}/schema`);
+        if (response.ok) {
+          const fullSchema = await response.json();
+          
+          // Extract UI schema from properties
+          const uiSchema = {};
+          const schema = { ...fullSchema };  // Clone the schema
+          
+          if (schema?.properties) {
+            for (const [key, prop] of Object.entries(schema.properties)) {
+              // UI Schema is stored directly in _ui_schema
+              if (prop._ui_schema) {
+                uiSchema[key] = prop._ui_schema;
+                delete prop._ui_schema;  // Clean up schema
+              }
+            }
+          }
+          
+          paramsSchema.set({ schema, uiSchema });
+        }
+      } catch (error) {
+        console.error('Error fetching schema:', error);
+      }
     };
 
     window.addEventListener('gameSessionReady', handleSessionReady);
+    window.addEventListener('gameSessionEnd', () => setSessionId(null));
 
     return () => {
       window.removeEventListener('gameSessionReady', handleSessionReady);
+      window.removeEventListener('gameSessionEnd', () => setSessionId(null));
       observer.disconnect();
       document.head.removeChild(bootstrapCSS);
       const darkTheme = document.head.querySelector('link[data-theme="dark"]');
@@ -74,7 +105,7 @@ function ParamsForm({ schema, uiSchema, gameType, gameId }) {
     };
   }, []);
 
-  if (!isClient) {
+  if (!isClient || !schema) {
     return null;
   }
 
@@ -89,8 +120,8 @@ function ParamsForm({ schema, uiSchema, gameType, gameId }) {
         `}
       </style>
       <Form
-        schema={schema}
-        uiSchema={uiSchema}
+        schema={schema.schema}
+        uiSchema={schema.uiSchema}
         validator={validator}
         disabled={!sessionId}
         onSubmit={async ({ formData }, originalEvent) => {

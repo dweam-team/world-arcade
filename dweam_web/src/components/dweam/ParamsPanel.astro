@@ -7,54 +7,18 @@ interface Props {
 }
 
 const { gameType, gameId } = Astro.props;
-
-// Fetch schema during server-side rendering
-let schema: Record<string, any> | null = null;
-let uiSchema: Record<string, any> | null = null;
-try {
-  const base_url = process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
-  const response = await fetch(`${base_url}/game/${gameType}/${gameId}/params/schema`);
-  if (response.ok) {
-    const fullSchema = await response.json();
-    
-    // Extract UI schema from properties
-    uiSchema = {};
-    schema = { ...fullSchema };  // Clone the schema
-    
-    if (schema?.properties) {
-      for (const [key, prop] of Object.entries(schema.properties as Record<string, any>)) {
-        // UI Schema is stored directly in _ui_schema
-        if (prop._ui_schema) {
-          uiSchema[key] = prop._ui_schema;
-          delete prop._ui_schema;  // Clean up schema
-        }
-      }
-    }
-    
-    console.log('Schema:', schema);
-    console.log('UI Schema:', uiSchema);
-  } else {
-    console.error('Failed to fetch schema:', response.status, response.statusText);
-  }
-} catch (error) {
-  console.error('Error fetching schema:', error);
-}
 ---
 
-{schema !== null && Object.keys(schema.properties).length > 0 && (
-  <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-    <h2 class="text-xl font-bold mb-4">Parameters</h2>
-    <div id="params-panel">
-      <ParamsForm 
-        client:load 
-        schema={schema} 
-        uiSchema={uiSchema} 
-        gameType={gameType} 
-        gameId={gameId} 
-      />
-    </div>
+<div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+  <h2 class="text-xl font-bold mb-4">Parameters</h2>
+  <div id="params-panel">
+    <ParamsForm 
+      client:load 
+      gameType={gameType} 
+      gameId={gameId} 
+    />
   </div>
-)}
+</div>
 
 <style>
   #params-panel {
