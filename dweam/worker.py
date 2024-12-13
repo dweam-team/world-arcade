@@ -5,7 +5,7 @@ import os
 from typing import Optional, Any
 from datetime import datetime
 from pathlib import Path
-from asyncio import StreamReader, StreamWriter, timeout
+from asyncio import StreamReader, StreamWriter
 
 from pydantic import TypeAdapter
 
@@ -121,18 +121,17 @@ class GameWorker:
         
         # Wait for client connection with timeout
         try:
-            async with timeout(5):
-                # Start serving (but don't block)
-                async with server:
-                    server_task = asyncio.create_task(server.serve_forever())
-                    # Wait for client to connect
-                    await client_connected.wait()
-                    # Once connected, cancel the server task
-                    server_task.cancel()
-                    try:
-                        await server_task
-                    except asyncio.CancelledError:
-                        pass
+            # Start serving (but don't block)
+            async with server:
+                server_task = asyncio.create_task(server.serve_forever())
+                # Wait for client to connect with timeout
+                await asyncio.wait_for(client_connected.wait(), timeout=5)
+                # Once connected, cancel the server task
+                server_task.cancel()
+                try:
+                    await server_task
+                except asyncio.CancelledError:
+                    pass
                     
             if not self.reader or not self.writer:
                 raise RuntimeError("No connection received")
