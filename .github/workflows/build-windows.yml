@@ -19,7 +19,7 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v2
       with:
-        version: 8
+        version: 9
 
     # TODO figure out how properly format the key for this without introducing weird bugs again
     # - name: Cache frontend build
