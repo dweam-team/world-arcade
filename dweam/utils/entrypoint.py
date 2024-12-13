@@ -98,58 +98,135 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path) -> None:
             dweam_path = Path(dweam.__file__).parent.parent
     
     # Get installed version using pip show
-    try:
+    result = subprocess.run(
+        [str(pip_path), "show", "dweam"],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode != 0:
+        log.warning("dweam not installed, installing", stdout=result.stdout, stderr=result.stderr)
         result = subprocess.run(
-            [str(pip_path), "show", "dweam"],
+            [str(pip_path), "install", "-e", str(dweam_path)],
             capture_output=True,
-            text=True,
-            check=True
+            text=True
         )
-        # Parse location from pip show output
-        install_location = None
-        for line in result.stdout.splitlines():
-            if line.startswith("Location: "):
-                install_location = line.split(": ")[1].strip()
-                break
-        
-        # If dweam isn't installed from our path, reinstall it
-        if not install_location or not Path(install_location).samefile(dweam_path):
-            log.warning("dweam is not installed from the correct location, reinstalling")
-            subprocess.run([str(pip_path), "install", "-e", str(dweam_path)], check=True)
-            
-    except subprocess.CalledProcessError:
-        # dweam not installed or pip show failed
-        log.warning("dweam not installed, reinstalling")
-        subprocess.run([str(pip_path), "install", "-e", str(dweam_path)], check=True)
+        if result.returncode != 0:
+            log.error("Failed to install dweam", stdout=result.stdout, stderr=result.stderr)
+            return
+        log.debug("dweam install output", stdout=result.stdout, stderr=result.stderr)
+        return
+
+    # Parse location from pip show output
+    install_location = None
+    for line in result.stdout.splitlines():
+        if line.startswith("Location: "):
+            install_location = line.split(": ")[1].strip()
+            break
+    
+    # If dweam isn't installed from our path, reinstall it
+    if not install_location or not Path(install_location).samefile(dweam_path):
+        log.warning("dweam is not installed from the correct location, reinstalling")
+        result = subprocess.run(
+            [str(pip_path), "install", "-e", str(dweam_path)],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            log.error("Failed to reinstall dweam", stdout=result.stdout, stderr=result.stderr)
+            return
+        log.debug("dweam reinstall output", stdout=result.stdout, stderr=result.stderr)
 
 
 def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, name: str) -> Path | None:
     """Install a game from its source into the given venv and return the installation path"""
-    pip_path = venv_path / "bin" / "pip"
+    pip_path = venv_path / "Scripts" / "pip.exe" if sys.platform == "win32" else venv_path / "bin" / "pip"
     
-    if isinstance(source, PathSource):
-        abs_path = source.path.absolute()
-        subprocess.run([str(pip_path), "install", "-e", str(abs_path)], check=True)
-        ensure_correct_dweam_version(log, pip_path)
-        return abs_path
-    elif isinstance(source, GitBranchSource):
-        git_url = f"git+{source.git}@{source.branch}#egg={name}"
-        subprocess.run([str(pip_path), "install", git_url], check=True)
-        
-        # Clone into a unique directory in our cache
-        cache_dir = get_cache_dir()
-        package_dir = (cache_dir / name).absolute()
-        package_dir.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "clone", "-b", source.branch, source.git, str(package_dir)], check=True)
-        ensure_correct_dweam_version(log, pip_path)
-        return package_dir
-    elif isinstance(source, PyPISource):
-        subprocess.run([str(pip_path), "install", f"{name}=={source.version}"], check=True)
-        ensure_correct_dweam_version(log, pip_path)
-        site_packages = next((venv_path / "lib").glob("python*/site-packages"))
-        return site_packages / name
-    else:
-        assert_never(source)
+    if not pip_path.exists():
+        log.error("Pip executable not found", path=str(pip_path))
+        return None
+
+    try:
+        if isinstance(source, PathSource):
+            abs_path = source.path.absolute()
+            if not abs_path.exists():
+                log.error("Source path does not exist", path=str(abs_path))
+                return None
+                
+            log.info("Installing from local path", path=str(abs_path))
+            result = subprocess.run(
+                [str(pip_path), "install", "-e", str(abs_path)],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode != 0:
+                log.error("Failed to install from local path", stdout=result.stdout, stderr=result.stderr)
+                return None
+            log.debug("Local install output", stdout=result.stdout, stderr=result.stderr)
+            
+            ensure_correct_dweam_version(log, pip_path)
+            return abs_path
+            
+        elif isinstance(source, GitBranchSource):
+            git_url = f"git+{source.git}@{source.branch}#egg={name}"
+            log.info("Installing from git", url=git_url)
+            
+            result = subprocess.run(
+                [str(pip_path), "install", git_url],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode != 0:
+                log.error("Failed to install from git", stdout=result.stdout, stderr=result.stderr)
+                return None
+            log.debug("Git install output", stdout=result.stdout, stderr=result.stderr)
+            
+            # Clone into cache dir
+            cache_dir = get_cache_dir()
+            package_dir = (cache_dir / name).absolute()
+            package_dir.mkdir(parents=True, exist_ok=True)
+            
+            result = subprocess.run(
+                ["git", "clone", "-b", source.branch, source.git, str(package_dir)],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode != 0:
+                log.error("Git clone failed", stdout=result.stdout, stderr=result.stderr)
+                return None
+            log.debug("Git clone output", stdout=result.stdout, stderr=result.stderr)
+            
+            ensure_correct_dweam_version(log, pip_path)
+            return package_dir
+            
+        elif isinstance(source, PyPISource):
+            log.info("Installing from PyPI", package=f"{name}=={source.version}")
+            try:
+                subprocess.run(
+                    [str(pip_path), "install", f"{name}=={source.version}"],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+            except subprocess.CalledProcessError as e:
+                log.error(
+                    "Pip install failed",
+                    stdout=e.stdout,
+                    stderr=e.stderr,
+                    returncode=e.returncode
+                )
+                return None
+                
+            ensure_correct_dweam_version(log, pip_path)
+            site_packages = next((venv_path / "Lib" if sys.platform == "win32" else "lib").glob("python*/site-packages"))
+            return site_packages / name
+            
+        else:
+            assert_never(source)
+            return None
+            
+    except Exception as e:
+        log.error("Unexpected error installing game source", exc_info=True)
         return None
 
 
