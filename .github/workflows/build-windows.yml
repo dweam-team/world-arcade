@@ -21,6 +21,13 @@ jobs:
       with:
         version: 9
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'pnpm'
+        cache-dependency-path: './dweam_web/pnpm-lock.yaml'
+
     # TODO figure out how properly format the key for this without introducing weird bugs again
     # - name: Cache frontend build
     #   uses: actions/cache@v4
@@ -41,13 +48,6 @@ jobs:
       shell: cmd
       run: |
         pnpm build
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'pnpm'
-        cache-dependency-path: './dweam_web/pnpm-lock.yaml'
 
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
