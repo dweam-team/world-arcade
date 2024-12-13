@@ -9,6 +9,8 @@ import tempfile
 from pathlib import Path
 from structlog.stdlib import BoundLogger
 import importlib.util
+import pkg_resources
+import sys
 
 from dweam.models import (
     PackageMetadata, GameInfo, GameSource,
@@ -70,13 +72,52 @@ def get_cache_dir() -> Path:
     return Path.home() / ".dweam" / "cache"
 
 
-def install_game_source(venv_path: Path, source: GameSource, name: str) -> Path | None:
+def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path) -> None:
+    """Ensure the correct version of dweam is installed in the venv"""
+    import dweam
+    
+    # Get our local dweam path, handling both development and PyInstaller environments
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        # Running in PyInstaller bundle
+        dweam_path = Path(sys._MEIPASS) / 'dweam'
+    else:
+        # Running in development
+        dweam_path = Path(dweam.__file__).parent.parent
+    
+    # Get installed version using pip show
+    try:
+        result = subprocess.run(
+            [str(pip_path), "show", "dweam"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        # Parse location from pip show output
+        install_location = None
+        for line in result.stdout.splitlines():
+            if line.startswith("Location: "):
+                install_location = line.split(": ")[1].strip()
+                break
+        
+        # If dweam isn't installed from our path, reinstall it
+        if not install_location or not Path(install_location).samefile(dweam_path):
+            log.warning("dweam is not installed from the correct location, reinstalling")
+            subprocess.run([str(pip_path), "install", "-e", str(dweam_path)], check=True)
+            
+    except subprocess.CalledProcessError:
+        # dweam not installed or pip show failed
+        log.warning("dweam not installed, reinstalling")
+        subprocess.run([str(pip_path), "install", "-e", str(dweam_path)], check=True)
+
+
+def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, name: str) -> Path | None:
     """Install a game from its source into the given venv and return the installation path"""
     pip_path = venv_path / "bin" / "pip"
     
     if isinstance(source, PathSource):
         abs_path = source.path.absolute()
         subprocess.run([str(pip_path), "install", "-e", str(abs_path)], check=True)
+        ensure_correct_dweam_version(log, pip_path)
         return abs_path
     elif isinstance(source, GitBranchSource):
         git_url = f"git+{source.git}@{source.branch}#egg={name}"
@@ -87,9 +128,11 @@ def install_game_source(venv_path: Path, source: GameSource, name: str) -> Path 
         package_dir = (cache_dir / name).absolute()
         package_dir.mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "clone", "-b", source.branch, source.git, str(package_dir)], check=True)
+        ensure_correct_dweam_version(log, pip_path)
         return package_dir
     elif isinstance(source, PyPISource):
         subprocess.run([str(pip_path), "install", f"{name}=={source.version}"], check=True)
+        ensure_correct_dweam_version(log, pip_path)
         site_packages = next((venv_path / "lib").glob("python*/site-packages"))
         return site_packages / name
     else:
@@ -177,7 +220,7 @@ def load_games(
             try:
                 if venv_path is not None:
                     # Install and load from venv
-                    install_path = install_game_source(venv_path, source, name)
+                    install_path = install_game_source(log, venv_path, source, name)
                     if install_path is None:
                         continue
                     metadata = load_game_source(install_path, source)

@@ -74,7 +74,7 @@ class GameWorker:
             line = await self.process.stderr.readline()
             if not line:
                 break
-            self.log.error("Worker stderr:", error=line.decode().rstrip())
+            self.log.info("Worker stderr:", error=line.decode().rstrip())
 
     async def start(self):
         """Start the worker process and establish communication"""
