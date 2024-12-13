@@ -1,7 +1,9 @@
 from collections import defaultdict
 import importlib
 import os
+import uuid
 from typing_extensions import assert_never
+import subprocess
 try:
     import tomli as toml_lib
 except ImportError:
@@ -9,19 +11,18 @@ except ImportError:
         import tomllib as toml_lib
     else:
         raise ImportError("Neither tomli nor tomllib (Python >= 3.11) are available. Please install tomli.")
-import venv
-import subprocess
 from pathlib import Path
 from structlog.stdlib import BoundLogger
 import importlib.util
 import sys
 from typing import BinaryIO
-from importlib.resources import files
+import shutil
 
 from dweam.models import (
     PackageMetadata, GameInfo, GameSource,
     GitBranchSource, PathSource, PyPISource, SourceConfig
 )
+from dweam.utils.venv import ensure_correct_dweam_version
 
 
 # Define default sources for each game
@@ -64,78 +65,12 @@ DEFAULT_SOURCE_CONFIG = SourceConfig(
 )
 
 
-def create_and_setup_venv(path: Path) -> Path:
-    """Create a new virtual environment and return its path"""
-    venv.create(path, with_pip=True)
-    return path
-
-
 def get_cache_dir() -> Path:
     """Get the cache directory for storing git repositories"""
     cache_dir = os.environ.get("CACHE_DIR")
     if cache_dir is not None:
         return Path(cache_dir)
     return Path.home() / ".dweam" / "cache"
-
-
-def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path) -> None:
-    """Ensure the correct version of dweam is installed in the venv"""
-    import dweam
-    
-    if getattr(sys, 'frozen', False):
-        # In PyInstaller bundle
-        dweam_path = Path(sys._MEIPASS) / 'dweam'
-    else:
-        # In development - get the package root directory
-        try:
-            # Try newer importlib.resources API first (Python 3.9+)
-            from importlib.resources.abc import Traversable
-            dweam_root: Traversable = files('dweam')
-            dweam_path = Path(str(dweam_root)).parent
-        except (ImportError, AttributeError):
-            # Fallback for older Python versions
-            import dweam
-            dweam_path = Path(dweam.__file__).parent.parent
-    
-    # Get installed version using pip show
-    result = subprocess.run(
-        [str(pip_path), "show", "dweam"],
-        capture_output=True,
-        text=True
-    )
-    
-    if result.returncode != 0:
-        log.warning("dweam not installed, installing", stdout=result.stdout, stderr=result.stderr)
-        result = subprocess.run(
-            [str(pip_path), "install", "-e", str(dweam_path)],
-            capture_output=True,
-            text=True
-        )
-        if result.returncode != 0:
-            log.error("Failed to install dweam", stdout=result.stdout, stderr=result.stderr)
-            return
-        log.debug("dweam install output", stdout=result.stdout, stderr=result.stderr)
-        return
-
-    # Parse location from pip show output
-    install_location = None
-    for line in result.stdout.splitlines():
-        if line.startswith("Location: "):
-            install_location = line.split(": ")[1].strip()
-            break
-    
-    # If dweam isn't installed from our path, reinstall it
-    if not install_location or not Path(install_location).samefile(dweam_path):
-        log.warning("dweam is not installed from the correct location, reinstalling")
-        result = subprocess.run(
-            [str(pip_path), "install", "-e", str(dweam_path)],
-            capture_output=True,
-            text=True
-        )
-        if result.returncode != 0:
-            log.error("Failed to reinstall dweam", stdout=result.stdout, stderr=result.stderr)
-            return
-        log.debug("dweam reinstall output", stdout=result.stdout, stderr=result.stderr)
 
 
 def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, name: str) -> Path | None:
@@ -150,19 +85,17 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
         if isinstance(source, PathSource):
             abs_path = source.path.absolute()
             if not abs_path.exists():
-                log.error("Source path does not exist", path=str(abs_path))
+                log.warning("Source path does not exist", path=str(abs_path))
                 return None
                 
             log.info("Installing from local path", path=str(abs_path))
             result = subprocess.run(
                 [str(pip_path), "install", "-e", str(abs_path)],
-                capture_output=True,
                 text=True
             )
             if result.returncode != 0:
-                log.error("Failed to install from local path", stdout=result.stdout, stderr=result.stderr)
+                log.error("Failed to install from local path")
                 return None
-            log.debug("Local install output", stdout=result.stdout, stderr=result.stderr)
             
             ensure_correct_dweam_version(log, pip_path)
             return abs_path
@@ -173,7 +106,6 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             
             result = subprocess.run(
                 [str(pip_path), "install", git_url],
-                capture_output=True,
                 text=True
             )
             if result.returncode != 0:
@@ -183,18 +115,16 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             
             # Clone into cache dir
             cache_dir = get_cache_dir()
-            package_dir = (cache_dir / name).absolute()
+            package_dir = (cache_dir / f"{name}-{uuid.uuid4()}").absolute()
             package_dir.mkdir(parents=True, exist_ok=True)
             
             result = subprocess.run(
                 ["git", "clone", "-b", source.branch, source.git, str(package_dir)],
-                capture_output=True,
                 text=True
             )
             if result.returncode != 0:
-                log.error("Git clone failed", stdout=result.stdout, stderr=result.stderr)
+                log.error("Git clone failed")
                 return None
-            log.debug("Git clone output", stdout=result.stdout, stderr=result.stderr)
             
             ensure_correct_dweam_version(log, pip_path)
             return package_dir
@@ -205,14 +135,11 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 subprocess.run(
                     [str(pip_path), "install", f"{name}=={source.version}"],
                     check=True,
-                    capture_output=True,
                     text=True
                 )
             except subprocess.CalledProcessError as e:
                 log.error(
-                    "Pip install failed",
-                    stdout=e.stdout,
-                    stderr=e.stderr,
+                    "Failed to install from PyPi",
                     returncode=e.returncode
                 )
                 return None
@@ -226,7 +153,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             return None
             
     except Exception as e:
-        log.error("Unexpected error installing game source", exc_info=True)
+        log.exception("Unexpected error installing game source")
         return None
 
 
@@ -321,10 +248,10 @@ def load_games(
             try:
                 if venv_path is not None:
                     # Install and load from venv
-                    install_path = install_game_source(log, venv_path, source, name)
-                    if install_path is None:
+                    source_path = install_game_source(log, venv_path, source, name)
+                    if source_path is None:
                         continue
-                    metadata = load_game_source(install_path, source)
+                    metadata = load_game_source(source_path, source)
                 else:
                     # Try to load from installed package
                     try:

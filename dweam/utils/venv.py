@@ -1,0 +1,148 @@
+import os
+import shutil
+import subprocess
+import sys
+import venv
+from pathlib import Path
+from structlog.stdlib import BoundLogger
+from importlib.resources import files
+
+
+def get_venv_path(log: BoundLogger) -> Path:
+    """Get and setup the virtual environment path"""
+    home_dir = os.environ.get("CACHE_DIR")
+    if home_dir is not None:
+        home_dir = Path(home_dir)
+    else:
+        home_dir = Path.home() / ".dweam"
+    
+    venv_path = home_dir / "dweam-venv"
+    
+    # If venv exists but is corrupted/incomplete, try to remove it
+    if venv_path.exists():
+        pip_path = venv_path / "Scripts" / "pip.exe" if sys.platform == "win32" else venv_path / "bin" / "pip"
+        if pip_path.exists():
+            return venv_path
+        log.warning("Pip not found; cleaning up corrupted venv")
+        try:
+            # On Windows, we need to ensure no processes are using the directory
+            if sys.platform == "win32":
+                import ctypes
+                kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+                MOVEFILE_DELAY_UNTIL_REBOOT = 0x4
+                for item in venv_path.rglob("*"):
+                    if item.is_file():
+                        try:
+                            kernel32.MoveFileExW(str(item), None, MOVEFILE_DELAY_UNTIL_REBOOT)
+                        except:
+                            pass
+                kernel32.MoveFileExW(str(venv_path), None, MOVEFILE_DELAY_UNTIL_REBOOT)
+            
+            # Remove the entire venv directory
+            shutil.rmtree(venv_path, ignore_errors=True)
+        except Exception as e:
+            log.error("Error cleaning up corrupted venv", error=str(e), path=venv_path)
+            # Continue anyway - we'll try to create a new venv
+    
+    # Create new venv if it doesn't exist
+    if not venv_path.exists():
+        log.info("Creating virtual environment", venv_path=venv_path)
+        try:
+            venv_path.parent.mkdir(parents=True, exist_ok=True)
+            create_and_setup_venv(venv_path)
+            log.info("Virtual environment created", venv_path=venv_path)
+        except Exception as e:
+            log.error("Failed to create virtual environment", error=str(e))
+            raise RuntimeError(f"Failed to create virtual environment: {e}")
+    else:
+        log.info("Found existing virtual environment", venv_path=venv_path)
+
+    return venv_path
+
+def create_and_setup_venv(path: Path) -> Path:
+    """Create a new virtual environment and return its path"""
+    try:
+        # Create venv with pip
+        builder = venv.EnvBuilder(
+            with_pip=True,  # Don't try to install pip yet
+            upgrade_deps=False,  # Don't upgrade deps yet
+            clear=True, 
+            symlinks=False  # Avoid symlinks on Windows
+        )
+        builder.create(path)
+        
+        # Get the venv's Python executable
+        pip_path = path / "Scripts" / "pip.exe" if sys.platform == "win32" else path / "bin" / "pip"
+                    
+        if not pip_path.exists():
+            raise RuntimeError("pip not found after installation")
+            
+        # Test pip installation
+        subprocess.run(
+            [str(pip_path), "--version"],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        
+        return path
+    except Exception as e:
+        raise RuntimeError(f"Failed to create virtual environment") from e
+
+def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path) -> None:
+    """Ensure the correct version of dweam is installed in the venv"""
+    import dweam
+    
+    if getattr(sys, 'frozen', False):
+        # In PyInstaller bundle
+        dweam_path = Path(sys._MEIPASS) / 'dweam'
+    else:
+        # In development - get the package root directory
+        try:
+            # Try newer importlib.resources API first (Python 3.9+)
+            from importlib.resources.abc import Traversable
+            dweam_root: Traversable = files('dweam')
+            dweam_path = Path(str(dweam_root)).parent
+        except (ImportError, AttributeError):
+            # Fallback for older Python versions
+            import dweam
+            dweam_path = Path(dweam.__file__).parent.parent
+    
+    # Get installed version using pip show
+    result = subprocess.run(
+        [str(pip_path), "show", "dweam"],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode != 0:
+        log.warning("dweam not installed, installing", stdout=result.stdout, stderr=result.stderr)
+        result = subprocess.run(
+            [str(pip_path), "install", "-e", str(dweam_path)],
+            text=True
+        )
+        if result.returncode != 0:
+            log.error("Failed to install dweam")
+            return
+        return
+
+    # Parse location from pip show output
+    install_location = None
+    for line in result.stdout.splitlines():
+        if line.startswith("Location: "):
+            install_location = line.split(": ")[1].strip()
+            break
+    
+    # If dweam isn't installed from our path, reinstall it
+    # TODO this wrongly detects incorrect install methinks
+    if not install_location or not Path(install_location).samefile(dweam_path):
+        log.warning("dweam is not installed from the correct location, reinstalling")
+        result = subprocess.run(
+            [str(pip_path), "install", "-e", str(dweam_path)],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            log.error("Failed to reinstall dweam", stdout=result.stdout, stderr=result.stderr)
+            return
+        log.debug("dweam reinstall output", stdout=result.stdout, stderr=result.stderr)

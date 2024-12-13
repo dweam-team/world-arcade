@@ -3,8 +3,9 @@ from collections import defaultdict
 import json
 import os
 import pathlib
+import sys
 import uuid
-import venv
+import yaml
 from dweam.models import GameInfo, GitBranchSource, ParamsUpdate, PathSource, StatusResponse
 from dweam.utils.turn import create_turn_credentials, get_turn_stun_urls
 from pydantic import ValidationError
@@ -21,41 +22,22 @@ from fastapi.responses import FileResponse, JSONResponse
 from aiortc import RTCSessionDescription
 import numpy as np
 from fastapi.staticfiles import StaticFiles
-import yaml
 from fastapi.middleware.cors import CORSMiddleware
 from dweam.log_config import get_logger
 from dweam.utils.entrypoint import load_games, get_cache_dir
 from dweam.worker import GameWorker
 from contextlib import asynccontextmanager
+from dweam.utils.venv import get_venv_path
 
 log = get_logger()
 is_loading = True
 games: defaultdict[str, dict[str, GameInfo]] = defaultdict(dict)
 
-def _get_venv_path() -> pathlib.Path:
-    home_dir = os.environ.get("CACHE_DIR")
-    if home_dir is not None:
-        home_dir = pathlib.Path(home_dir)
-    else:
-        home_dir = pathlib.Path.home() / ".dweam"
-    
-    venv_path = home_dir / "dweam-venv"
-    if not venv_path.exists():
-        log.info("Creating virtual environment", venv_path=venv_path)
-        venv_path.parent.mkdir(parents=True, exist_ok=True)
-        venv.create(venv_path, with_pip=True)
-        log.info("Virtual environment created", venv_path=venv_path)
-    else:
-        log.info("Found existing virtual environment", venv_path=venv_path)
-
-    return venv_path
-
-# load game entrypoints in a background thread
 def _load_games():
     global games
     global is_loading
-    venv_path = _get_venv_path()
-    load_games(log, venv_path, games)  # Update the existing dictionary instead of reassigning
+    venv_path = get_venv_path(log)
+    load_games(log, venv_path, games)
     is_loading = False
 
 thread = threading.Thread(target=_load_games)
@@ -159,7 +141,7 @@ async def offer(
         local_only=local_only,
         game_type=type,
         game_id=id,
-        venv_path=_get_venv_path()
+        venv_path=get_venv_path(log)
     )
     active_workers[session_id] = worker
     
@@ -246,7 +228,7 @@ async def get_params_schema(
         log=log,
         game_info=game_info,
         session_id=session_id,
-        venv_path=_get_venv_path(),
+        venv_path=get_venv_path(log),
         local_only=True,
         game_type=type,
         game_id=id
