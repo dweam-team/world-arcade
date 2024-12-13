@@ -6,6 +6,8 @@ from typing import Optional, Any
 from datetime import datetime
 from pathlib import Path
 from asyncio import StreamReader, StreamWriter
+import sys
+from importlib.resources import files
 
 from pydantic import TypeAdapter
 
@@ -75,7 +77,14 @@ class GameWorker:
     async def start(self):
         """Start the worker process and establish communication"""
         venv_python = self.venv_path / "bin" / "python"
-        worker_script = Path(__file__).parent / "game_process.py"
+        
+        # Use importlib.resources to reliably locate the module file
+        if getattr(sys, 'frozen', False):
+            # In PyInstaller bundle
+            worker_script = Path(sys._MEIPASS) / "dweam" / "game_process.py"
+        else:
+            # In development
+            worker_script = files('dweam').joinpath('game_process.py')
         
         # Create a TCP server socket
         client_connected = asyncio.Event()

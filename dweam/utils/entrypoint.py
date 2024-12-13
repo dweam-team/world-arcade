@@ -16,6 +16,7 @@ from structlog.stdlib import BoundLogger
 import importlib.util
 import sys
 from typing import BinaryIO
+from importlib.resources import files
 
 from dweam.models import (
     PackageMetadata, GameInfo, GameSource,
@@ -81,13 +82,20 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path) -> None:
     """Ensure the correct version of dweam is installed in the venv"""
     import dweam
     
-    # Get our local dweam path, handling both development and PyInstaller environments
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-        # Running in PyInstaller bundle
+    if getattr(sys, 'frozen', False):
+        # In PyInstaller bundle
         dweam_path = Path(sys._MEIPASS) / 'dweam'
     else:
-        # Running in development
-        dweam_path = Path(dweam.__file__).parent.parent
+        # In development - get the package root directory
+        try:
+            # Try newer importlib.resources API first (Python 3.9+)
+            from importlib.resources.abc import Traversable
+            dweam_root: Traversable = files('dweam')
+            dweam_path = Path(str(dweam_root)).parent
+        except (ImportError, AttributeError):
+            # Fallback for older Python versions
+            import dweam
+            dweam_path = Path(dweam.__file__).parent.parent
     
     # Get installed version using pip show
     try:
