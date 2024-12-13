@@ -7,7 +7,6 @@ from dweam.models import GameInfo
 from pydantic import BaseModel, Field
 import pygame
 from structlog import BoundLogger
-import torch
 
 
 class Game:
@@ -35,7 +34,7 @@ class Game:
         log: BoundLogger, 
         game_id: str,
         fps: int,
-        device: torch.device,
+        device: "torch.device",  # can't import torch here, only in worker process
     ):
         """Initialize game instance
         

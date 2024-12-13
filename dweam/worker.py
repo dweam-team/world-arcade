@@ -4,14 +4,10 @@ import json
 import os
 from typing import Optional, Any
 from datetime import datetime
-import subprocess
 from pathlib import Path
-import sys
-from asyncio import StreamReader, StreamWriter
-import socket
+from asyncio import StreamReader, StreamWriter, timeout
 
 from pydantic import TypeAdapter
-import async_timeout
 
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceServer
 from av.video.frame import VideoFrame
@@ -125,7 +121,7 @@ class GameWorker:
         
         # Wait for client connection with timeout
         try:
-            async with async_timeout.timeout(5):
+            async with timeout(5):
                 # Start serving (but don't block)
                 async with server:
                     server_task = asyncio.create_task(server.serve_forever())

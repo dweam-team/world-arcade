@@ -5,11 +5,9 @@ from typing_extensions import assert_never
 import tomli
 import venv
 import subprocess
-import tempfile
 from pathlib import Path
 from structlog.stdlib import BoundLogger
 import importlib.util
-import pkg_resources
 import sys
 
 from dweam.models import (
