@@ -1877,4 +1877,4 @@ local = ["pywebview"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.13"
-content-hash = "08618c074bab3b6ac19a394efe08170d1a64035eafc0c0573c949860cb081bf6"
+content-hash = "673f90d5b37eda8b2cf9b44656f56964e348751672b00e5e4845cbc53a491655"

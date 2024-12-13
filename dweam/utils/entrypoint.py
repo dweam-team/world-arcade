@@ -2,13 +2,20 @@ from collections import defaultdict
 import importlib
 import os
 from typing_extensions import assert_never
-import tomli
+try:
+    import tomli as toml_lib
+except ImportError:
+    if sys.version_info >= (3, 11):
+        import tomllib as toml_lib
+    else:
+        raise ImportError("Neither tomli nor tomllib (Python >= 3.11) are available. Please install tomli.")
 import venv
 import subprocess
 from pathlib import Path
 from structlog.stdlib import BoundLogger
 import importlib.util
 import sys
+from typing import BinaryIO
 
 from dweam.models import (
     PackageMetadata, GameInfo, GameSource,
@@ -147,6 +154,13 @@ def load_game_source(install_path: Path, source: GameSource) -> PackageMetadata 
     return metadata
 
 
+def load_toml(file: BinaryIO) -> dict:
+    """Load TOML from a binary file object.
+    Uses tomli if available, otherwise falls back to tomllib on Python >= 3.11.
+    Raises ImportError if neither is available."""
+    return toml_lib.load(file)
+
+
 def load_metadata_from_path(path: Path) -> PackageMetadata | None:
     """Load metadata from a directory path (git clone or local path)"""
     try:
@@ -154,14 +168,14 @@ def load_metadata_from_path(path: Path) -> PackageMetadata | None:
         dweam_path = path / "dweam.toml"
         if dweam_path.exists():
             with open(dweam_path, "rb") as f:
-                data = tomli.load(f)
+                data = load_toml(f)
             return PackageMetadata.model_validate(data)
         
         # Then try pyproject.toml
         pyproject_path = path / "pyproject.toml"
         if pyproject_path.exists():
             with open(pyproject_path, "rb") as f:
-                pyproject_data = tomli.load(f)
+                pyproject_data = load_toml(f)
                 
             # Get the [tool.dweam] table
             if "tool" in pyproject_data and "dweam" in pyproject_data["tool"]:
@@ -174,6 +188,8 @@ def load_metadata_from_path(path: Path) -> PackageMetadata | None:
         pass
     
     return None
+
+
 def load_metadata_from_package(package_path: Path) -> PackageMetadata | None:
     """Load metadata from the parent directory of an installed package"""
     try:
@@ -186,13 +202,14 @@ def load_metadata_from_package(package_path: Path) -> PackageMetadata | None:
         dweam_path = parent_path / "dweam.toml"
         if dweam_path.exists():
             with open(dweam_path, "rb") as f:
-                data = tomli.load(f)
+                data = load_toml(f)
             return PackageMetadata.model_validate(data)
     except (TypeError, OSError) as e:
         print(f"Error loading metadata from package: {e}")
         pass
     
     return None
+
 
 def load_game_implementation(entrypoint: str) -> type:
     """Load a game implementation from an entrypoint string (e.g. 'package.module:Class')"""
@@ -202,6 +219,7 @@ def load_game_implementation(entrypoint: str) -> type:
         return getattr(module, class_name)
     except Exception as e:
         raise ImportError(f"Failed to load game implementation from {entrypoint}: {e}")
+
 
 def load_games(
     log: BoundLogger,
