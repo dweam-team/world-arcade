@@ -15,16 +15,19 @@ class PyInstallerEnvBuilder(venv.EnvBuilder):
         context = super().ensure_directories(env_dir)
         if getattr(sys, 'frozen', False):
             # When running from PyInstaller, use the bundled python.exe
-            # First try the root directory where we explicitly added it
             python_exe = Path(sys._MEIPASS) / "python.exe"
             if not python_exe.exists():
-                # Fall back to _internal as a backup
-                python_exe = Path(sys._MEIPASS) / "_internal" / "python.exe"
-                if not python_exe.exists():
-                    raise RuntimeError("python.exe not found in PyInstaller bundle")
+                raise RuntimeError(f"python.exe not found in PyInstaller bundle at {python_exe}")
+            
+            # Point the venv to use our bundled Python directly
             context.executable = str(python_exe)
-        return context
+            context.python_dir = str(python_exe.parent)
+            context.python_exe = python_exe.name
 
+            # Make the venv use our bundled Python's bin directory
+            context.bin_path = str(python_exe.parent)
+        return context
+    
 
 def get_venv_path(log: BoundLogger) -> Path:
     """Get and setup the virtual environment path"""
