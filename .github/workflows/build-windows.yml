@@ -132,7 +132,9 @@ jobs:
           --add-data "dweam_web\dist\client;frontend\client" ^
           --add-binary "node.exe;." ^
           --add-data "node_modules;node_modules" ^
-          --collect-binaries python ^
+          --add-binary "%pythonLocation%\python.exe;." ^
+          --add-binary "%pythonLocation%\python3.dll;." ^
+          --add-binary "%pythonLocation%\python311.dll;." ^
           --hidden-import pip ^
           --hidden-import setuptools ^
           --hidden-import wheel ^

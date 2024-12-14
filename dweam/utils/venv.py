@@ -15,9 +15,13 @@ class PyInstallerEnvBuilder(venv.EnvBuilder):
         context = super().ensure_directories(env_dir)
         if getattr(sys, 'frozen', False):
             # When running from PyInstaller, use the bundled python.exe
-            python_exe = Path(sys._MEIPASS) / "_internal" / "python.exe"
+            # First try the root directory where we explicitly added it
+            python_exe = Path(sys._MEIPASS) / "python.exe"
             if not python_exe.exists():
-                raise RuntimeError("python.exe not found in PyInstaller bundle")
+                # Fall back to _internal as a backup
+                python_exe = Path(sys._MEIPASS) / "_internal" / "python.exe"
+                if not python_exe.exists():
+                    raise RuntimeError("python.exe not found in PyInstaller bundle")
             context.executable = str(python_exe)
         return context
 
