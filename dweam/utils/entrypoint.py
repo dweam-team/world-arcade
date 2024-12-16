@@ -73,9 +73,14 @@ def get_cache_dir() -> Path:
     return Path.home() / ".dweam" / "cache"
 
 
+def get_pip_path(venv_path: Path) -> Path:
+    """Get the pip executable path for the given venv"""
+    return venv_path / "Scripts" / "pip.exe" if sys.platform == "win32" else venv_path / "bin" / "pip"
+
+
 def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, name: str) -> Path | None:
     """Install a game from its source into the given venv and return the installation path"""
-    pip_path = venv_path / "Scripts" / "pip.exe" if sys.platform == "win32" else venv_path / "bin" / "pip"
+    pip_path = get_pip_path(venv_path)
     
     if not pip_path.exists():
         log.error("Pip executable not found", path=str(pip_path))
@@ -97,7 +102,6 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 log.error("Failed to install from local path")
                 return None
             
-            ensure_correct_dweam_version(log, pip_path)
             return abs_path
             
         elif isinstance(source, GitBranchSource):
@@ -128,7 +132,6 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 return None
             log.debug("Git clone output", stdout=result.stdout, stderr=result.stderr)
             
-            ensure_correct_dweam_version(log, pip_path)
             return package_dir
             
         elif isinstance(source, PyPISource):
@@ -146,7 +149,6 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 )
                 return None
                 
-            ensure_correct_dweam_version(log, pip_path)
             site_packages = next((venv_path / "Lib" if sys.platform == "win32" else "lib").glob("python*/site-packages"))
             return site_packages / name
             
@@ -294,6 +296,10 @@ def load_games(
                 
         if not success:
             log.error("Failed to load game from any source", name=name)
+    
+    if venv_path is not None:
+        pip_path = get_pip_path(venv_path)
+        ensure_correct_dweam_version(log, pip_path)
             
     return games
 
