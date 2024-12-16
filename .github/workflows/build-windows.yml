@@ -135,6 +135,8 @@ jobs:
           --add-binary "%pythonLocation%\python.exe;." ^
           --add-binary "%pythonLocation%\python3.dll;." ^
           --add-binary "%pythonLocation%\python311.dll;." ^
+          --add-binary "%pythonLocation%\Lib\venv\scripts\nt\venvlauncher.exe;." ^
+          --add-binary "%pythonLocation%\Lib\venv\scripts\nt\venvwlauncher.exe;." ^
           --hidden-import pip ^
           --hidden-import setuptools ^
           --hidden-import wheel ^

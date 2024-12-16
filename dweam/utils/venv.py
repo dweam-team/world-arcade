@@ -23,11 +23,39 @@ class PyInstallerEnvBuilder(venv.EnvBuilder):
             context.executable = str(python_exe)
             context.python_dir = str(python_exe.parent)
             context.python_exe = python_exe.name
-
+            
             # Make the venv use our bundled Python's bin directory
-            context.bin_path = str(python_exe.parent)
+            if sys.platform == "win32":
+                context.bin_path = str(Path(env_dir) / "Scripts")
+            else:
+                context.bin_path = str(Path(env_dir) / "bin")
         return context
     
+    def symlink_or_copy(self, src, dst, relative_symlinks_ok=False):
+        """Override symlink_or_copy to handle Windows venv creation"""
+        if not (getattr(sys, 'frozen', False) and sys.platform == "win32"):
+            super().symlink_or_copy(src, dst, relative_symlinks_ok)
+            return
+            
+        basename = os.path.basename(src).lower()
+        if basename in ('python.exe', 'pythonw.exe'):
+            # For python.exe and pythonw.exe, copy the venvlauncher instead
+            launcher = 'venvlauncher.exe' if basename == 'python.exe' else 'venvwlauncher.exe'
+            launcher_path = Path(sys._MEIPASS) / launcher
+            if not launcher_path.exists():
+                raise RuntimeError(f"{launcher} not found in PyInstaller bundle")
+            shutil.copyfile(launcher_path, dst)
+        elif basename in ('python3.dll', 'python311.dll'):
+            # Copy DLLs directly
+            shutil.copyfile(src, dst)
+        else:
+            # Copy any other files that might be needed
+            try:
+                shutil.copyfile(src, dst)
+            except (FileNotFoundError, OSError):
+                # Ignore if source doesn't exist or can't be copied
+                pass
+
 
 def get_venv_path(log: BoundLogger) -> Path:
     """Get and setup the virtual environment path"""
