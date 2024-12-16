@@ -109,27 +109,42 @@ def get_venv_path(log: BoundLogger) -> Path:
 
     return venv_path
 
-def create_and_setup_venv(log, path: Path) -> Path:
+def create_and_setup_venv(log: BoundLogger, path: Path) -> Path:
     """Create a new virtual environment and return its path"""
-    try:
-        builder = PyInstallerEnvBuilder(
-            log,
+    if not getattr(sys, 'frozen', False):
+        # In development, use normal venv creation
+        builder = venv.EnvBuilder(
             with_pip=True,
             upgrade_deps=True,
             clear=True,
             symlinks=False
         )
         builder.create(path)
-        
-        # Verify pip installation
-        pip_path = path / "Scripts" / "pip.exe" if sys.platform == "win32" else path / "bin" / "pip"
-        if not pip_path.exists():
-            raise RuntimeError("pip not found after venv creation")
-            
         return path
 
-    except Exception as e:
-        raise RuntimeError(f"Failed to create virtual environment: {str(e)}") from e
+    # In frozen app, use the copied Python
+    python_exe = Path(sys._MEIPASS) / 'python' / 'python.exe'
+    if not python_exe.exists():
+        raise RuntimeError(f"Python executable not found at {python_exe}")
+
+    log.debug("Creating venv using copied Python", python_exe=str(python_exe))
+    
+    # Create venv using -m venv
+    result = subprocess.run(
+        [str(python_exe), "-m", "venv", "--clear", str(path)],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to create venv: {result.stderr}")
+
+    # Verify pip installation
+    pip_path = path / "Scripts" / "pip.exe"
+    if not pip_path.exists():
+        raise RuntimeError("pip not found after venv creation")
+
+    return path
+
 
 def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path) -> None:
     """Ensure the correct version of dweam is installed in the venv"""
