@@ -159,6 +159,8 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path):
     if getattr(sys, 'frozen', False):
         # In PyInstaller bundle
         dweam_path = Path(sys._MEIPASS) / 'dweam'
+        if not (dweam_path / 'pyproject.toml').exists():
+            raise RuntimeError(f"dweam package files not found at {dweam_path}")
     else:
         # In development - get the package root directory
         from importlib.resources.abc import Traversable
