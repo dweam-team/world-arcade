@@ -146,8 +146,14 @@ def create_and_setup_venv(log: BoundLogger, path: Path) -> Path:
     return path
 
 
-def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path) -> None:
-    """Ensure the correct version of dweam is installed in the venv"""
+def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path):
+    """
+    Ensure the correct version of dweam is installed in the venv.
+    
+    Args:
+        log: Logger instance
+        pip_path: Path to pip executable
+    """
     import dweam
     
     if getattr(sys, 'frozen', False):
@@ -155,15 +161,9 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path) -> None:
         dweam_path = Path(sys._MEIPASS) / 'dweam'
     else:
         # In development - get the package root directory
-        try:
-            # Try newer importlib.resources API first (Python 3.9+)
-            from importlib.resources.abc import Traversable
-            dweam_root: Traversable = files('dweam')
-            dweam_path = Path(str(dweam_root)).parent
-        except (ImportError, AttributeError):
-            # Fallback for older Python versions
-            import dweam
-            dweam_path = Path(dweam.__file__).parent.parent
+        from importlib.resources.abc import Traversable
+        dweam_root: Traversable = files('dweam')
+        dweam_path = Path(str(dweam_root)).parent
     
     # Get installed version using pip show
     result = subprocess.run(
@@ -196,10 +196,10 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path) -> None:
         log.warning("dweam is not installed from the correct location, reinstalling")
         result = subprocess.run(
             [str(pip_path), "install", "-e", str(dweam_path)],
-            capture_output=True,
             text=True
         )
         if result.returncode != 0:
-            log.error("Failed to reinstall dweam", stdout=result.stdout, stderr=result.stderr)
-            return
-        log.debug("dweam reinstall output", stdout=result.stdout, stderr=result.stderr)
+            log.error("Failed to reinstall dweam")
+            raise RuntimeError("Failed to reinstall dweam package")
+    
+    return True
