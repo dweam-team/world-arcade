@@ -40,8 +40,7 @@ def _load_games():
     load_games(log, venv_path, games)
     is_loading = False
 
-thread = threading.Thread(target=_load_games)
-thread.start()
+game_loading_thread = None
 
 def logger_dependency() -> BoundLogger:
     global log
@@ -55,6 +54,9 @@ def is_local_only() -> bool:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global game_loading_thread
+    game_loading_thread = threading.Thread(target=_load_games)
+    game_loading_thread.start()
     yield
     # Clean up active games on shutdown
     await asyncio.gather(*[worker.cleanup() for worker in active_workers.values()])
