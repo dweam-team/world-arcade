@@ -10,25 +10,31 @@ from importlib.resources import files
 
 class PyInstallerEnvBuilder(venv.EnvBuilder):
     """Custom EnvBuilder that uses the bundled python.exe when running from PyInstaller"""
+
+    def __init__(self, log: BoundLogger, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.log = log
     
     def ensure_directories(self, env_dir):
         context = super().ensure_directories(env_dir)
         if getattr(sys, 'frozen', False):
-            # When running from PyInstaller, use the bundled python.exe
-            python_exe = Path(sys._MEIPASS) / "python.exe"
-            if not python_exe.exists():
-                raise RuntimeError(f"python.exe not found in PyInstaller bundle at {python_exe}")
+            # Use the copied Python directory, not the PyInstaller one
+            base_dir = Path(sys._MEIPASS) / 'python'
+            if not base_dir.exists():
+                raise RuntimeError(f"Python directory not found at {base_dir}")
+            if not (base_dir / "python.exe").exists():
+                raise RuntimeError(f"python.exe not found in {base_dir}")
+                
+            # Point to our copied Python
+            context.executable = str(base_dir / "python.exe")
+            context.python_dir = str(base_dir)
+            context.python_exe = "python.exe"
             
-            # Point the venv to use our bundled Python directly
-            context.executable = str(python_exe)
-            context.python_dir = str(python_exe.parent)
-            context.python_exe = python_exe.name
+            # Set up paths
+            context.bin_path = str(Path(env_dir) / "Scripts")
             
-            # Make the venv use our bundled Python's bin directory
-            if sys.platform == "win32":
-                context.bin_path = str(Path(env_dir) / "Scripts")
-            else:
-                context.bin_path = str(Path(env_dir) / "bin")
+            # Add better error reporting
+            self.log.debug(f"Prepared python venv creation context", base_dir=base_dir, executable=context.executable, python_dir=context.python_dir)
         return context
     
     def symlink_or_copy(self, src, dst, relative_symlinks_ok=False):
@@ -38,23 +44,18 @@ class PyInstallerEnvBuilder(venv.EnvBuilder):
             return
             
         basename = os.path.basename(src).lower()
+        base_dir = Path(sys._MEIPASS) / 'python'
+        
         if basename in ('python.exe', 'pythonw.exe'):
-            # For python.exe and pythonw.exe, copy the venvlauncher instead
-            launcher = 'venvlauncher.exe' if basename == 'python.exe' else 'venvwlauncher.exe'
-            launcher_path = Path(sys._MEIPASS) / launcher
-            if not launcher_path.exists():
-                raise RuntimeError(f"{launcher} not found in PyInstaller bundle")
-            shutil.copyfile(launcher_path, dst)
-        elif basename in ('python3.dll', 'python311.dll'):
-            # Copy DLLs directly
-            shutil.copyfile(src, dst)
+            src_path = base_dir / basename
+            if not src_path.exists():
+                raise RuntimeError(f"Required Python executable not found: {src_path}")
+            shutil.copyfile(src_path, dst)
         else:
-            # Copy any other files that might be needed
-            try:
-                shutil.copyfile(src, dst)
-            except (FileNotFoundError, OSError):
-                # Ignore if source doesn't exist or can't be copied
-                pass
+            # Copy DLLs and other files from our bundle
+            src_path = base_dir / basename
+            if src_path.exists():
+                shutil.copyfile(src_path, dst)
 
 
 def get_venv_path(log: BoundLogger) -> Path:
@@ -98,7 +99,7 @@ def get_venv_path(log: BoundLogger) -> Path:
         log.info("Creating virtual environment", venv_path=venv_path)
         try:
             venv_path.parent.mkdir(parents=True, exist_ok=True)
-            create_and_setup_venv(venv_path)
+            create_and_setup_venv(log, venv_path)
             log.info("Virtual environment created", venv_path=venv_path)
         except Exception as e:
             log.error("Failed to create virtual environment", error=str(e))
@@ -108,32 +109,25 @@ def get_venv_path(log: BoundLogger) -> Path:
 
     return venv_path
 
-def create_and_setup_venv(path: Path) -> Path:
+def create_and_setup_venv(log, path: Path) -> Path:
     """Create a new virtual environment and return its path"""
     try:
         builder = PyInstallerEnvBuilder(
+            log,
             with_pip=True,
-            upgrade_deps=False,
-            clear=True, 
+            upgrade_deps=True,
+            clear=True,
             symlinks=False
         )
         builder.create(path)
         
-        # Get the venv's pip executable
+        # Verify pip installation
         pip_path = path / "Scripts" / "pip.exe" if sys.platform == "win32" else path / "bin" / "pip"
-                    
         if not pip_path.exists():
-            raise RuntimeError("pip not found after installation")
+            raise RuntimeError("pip not found after venv creation")
             
-        # Test pip installation
-        subprocess.run(
-            [str(pip_path), "--version"],
-            check=True,
-            capture_output=True,
-            text=True
-        )
-        
         return path
+
     except Exception as e:
         raise RuntimeError(f"Failed to create virtual environment: {str(e)}") from e
 
