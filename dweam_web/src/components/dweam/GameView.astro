@@ -1,4 +1,6 @@
 ---
+import { api } from "../../lib/api";
+
 interface Props {
   gameType: string;
   gameId: string;
@@ -14,9 +16,7 @@ const { gameType, gameId } = Astro.props;
   </div>
 </div>
 
-<script define:vars={{ gameType, gameId }}>
-import { api } from "~/lib/api";
-
+<script type="module" define:vars={{ gameType, gameId, api }}>
   const video = document.getElementById('video');
   const playOverlay = document.getElementById('playOverlay');
   let pc = null;
