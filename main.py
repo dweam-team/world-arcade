@@ -105,7 +105,7 @@ def wait_for_server(url, timeout=30, interval=0.5):
         time.sleep(interval)
     return False
 
-def run_backend(host="127.0.0.1", port=8080):
+def run_backend(host, port):
     """Run the backend server"""
     # Ensure each process has its own console output
     create_debug_console()
@@ -127,7 +127,7 @@ def run_backend(host="127.0.0.1", port=8080):
         print(f"Backend error: {str(e)}")  # Direct console output
         sys.stdout.flush()
 
-def run_frontend(host="127.0.0.1", port=4321, backend_port=8080):
+def run_frontend(host, port, backend_port):
     """Run the frontend SSR server"""
     # Ensure each process has its own console output
     create_debug_console()
@@ -171,10 +171,9 @@ def run_frontend(host="127.0.0.1", port=4321, backend_port=8080):
     env['NODE_OPTIONS'] = '--no-warnings'  # Reduce noise in logs
     
     # Log the environment setup
-    logger.info(f"Node executable path: {node_exe}")
-    logger.info(f"Node modules path: {node_path}")
-    logger.info(f"PATH: {env['PATH']}")
-    logger.info(f"Backend URL: {backend_url}")
+    # logger.info(f"Node executable path: {node_exe}")
+    # logger.info(f"Node modules path: {node_path}")
+    # logger.info(f"PATH: {env['PATH']}")
     
     # The entry point should be in the server directory
     if hasattr(sys, '_MEIPASS'):

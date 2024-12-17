@@ -301,6 +301,8 @@ def load_games(
         pip_path = get_pip_path(venv_path)
         ensure_correct_dweam_version(log, pip_path)
             
+    log.info("Finished loading games")
+
     return games
 
 
