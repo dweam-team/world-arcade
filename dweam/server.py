@@ -68,13 +68,16 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:4321",  # Development
-        "http://localhost",       # Production
-        # Add other allowed origins as needed
+        "http://localhost:4321",    # Development frontend
+        "http://localhost:8080",    # Development API
+        "http://localhost",         # Production
+        "http://127.0.0.1:4321",   # Alternative development frontend
+        "http://127.0.0.1:8080",   # Alternative development API
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS", "DELETE", "PATCH", "PUT"],
     allow_headers=["*"],
+    max_age=86400,  # Cache preflight requests for 24 hours
 )
 
 # Global worker management

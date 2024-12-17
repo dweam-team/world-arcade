@@ -26,6 +26,7 @@ class ApiClient {
     try {
       const response = await fetch(url.toString(), {
         ...fetchOptions,
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...fetchOptions.headers,
