@@ -163,13 +163,18 @@ def run_frontend(host="127.0.0.1", port=4321, backend_port=8080):
     env['HOST'] = host
     env['PORT'] = str(port)
     env['ASTRO_NODE_AUTOSTART'] = 'true'
-    env['INTERNAL_BACKEND_URL'] = f'http://{host}:{backend_port}'
+    
+    # Set the backend URL for SSR
+    backend_url = f'http://{host}:{backend_port}'
+    env['INTERNAL_BACKEND_URL'] = backend_url
+    
     env['NODE_OPTIONS'] = '--no-warnings'  # Reduce noise in logs
     
     # Log the environment setup
     logger.info(f"Node executable path: {node_exe}")
     logger.info(f"Node modules path: {node_path}")
     logger.info(f"PATH: {env['PATH']}")
+    logger.info(f"Backend URL: {backend_url}")
     
     # The entry point should be in the server directory
     if hasattr(sys, '_MEIPASS'):

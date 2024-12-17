@@ -1,4 +1,5 @@
 import { atom } from 'nanostores';
+import { api } from '../lib/api';
 
 export interface GameInfo {
   type: string;
@@ -27,16 +28,12 @@ export const paramsSchema = atom<ParamsSchema | null>(null);
 // Initialize store
 export async function initializeStore() {
   try {
-    const statusResponse = await fetch('/status');
-    const status = await statusResponse.json();
+    const status = await api.getStatus();
     isLoading.set(status.is_loading);
 
     // Get initial games
-    const gamesResponse = await fetch('/game_info');
-    if (gamesResponse.ok) {
-      const gamesData = await gamesResponse.json();
-      games.set(gamesData);
-    }
+    const gamesData = await api.getGameInfo();
+    games.set(gamesData);
 
     if (status.is_loading) {
       startPolling();
@@ -50,14 +47,10 @@ export async function initializeStore() {
 function startPolling() {
   let pollInterval = setInterval(async () => {
     try {
-      const statusResponse = await fetch('/status');
-      const status = await statusResponse.json();
+      const status = await api.getStatus();
       isLoading.set(status.is_loading);
-      const response = await fetch('/game_info');
-      if (response.ok) {
-        const gamesData = await response.json();
-        games.set(gamesData);
-      }
+      const gamesData = await api.getGameInfo();
+      games.set(gamesData);
 
       // Stop polling when status is running
       if (!status.is_loading) {

@@ -3,7 +3,7 @@ import validator from '@rjsf/validator-ajv8';
 import { useEffect, useState } from 'react';
 import { paramsSchema } from '~/stores/gameStore';
 import { useStore } from '@nanostores/react';
-
+import { api } from '~/lib/api';
 function ParamsForm({ gameType, gameId }) {
   const [isClient, setIsClient] = useState(false);
   const [sessionId, setSessionId] = useState(null);
@@ -65,7 +65,7 @@ function ParamsForm({ gameType, gameId }) {
 
       // Fetch schema when session is ready
       try {
-        const response = await fetch(`/params/${sid}/schema`);
+        const response = await api.getParamsSchema(sid);
         if (response.ok) {
           const fullSchema = await response.json();
           
@@ -129,15 +129,7 @@ function ParamsForm({ gameType, gameId }) {
           if (!sessionId) return;
 
           try {
-            const response = await fetch(`/params/${sessionId}`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                params: formData
-              }),
-            });
+            const response = await api.getParamsSchema(sid);
 
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);

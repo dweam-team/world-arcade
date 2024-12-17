@@ -27,6 +27,10 @@ const whenExternalScripts = (items: (() => AstroIntegration) | (() => AstroInteg
 
 export default defineConfig({
   output: 'server',
+  // server: {
+  //   port: process.env.PORT ? parseInt(process.env.PORT) : 4321,
+  //   host: process.env.HOST || '127.0.0.1',
+  // },
 
   integrations: [
     tailwind({
@@ -91,30 +95,6 @@ export default defineConfig({
     resolve: {
       alias: {
         '~': path.resolve(__dirname, './src'),
-      },
-    },
-    server: {
-      port: 4321,
-      host: true,
-      proxy: {
-        '/offer': {
-          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
-        },
-        '/game_info': {
-          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
-        },
-        '/turn-credentials': {
-          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
-        },
-        '/params': {
-          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
-        },
-        '/status': {
-          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
-        },
-        '/thumb': {
-          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
-        },
       },
     },
     plugins: [yaml()],
