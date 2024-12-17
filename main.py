@@ -179,7 +179,7 @@ def run_frontend(host, port, backend_port):
     if hasattr(sys, '_MEIPASS'):
         server_path = os.path.normpath(resource_path(os.path.join('frontend', 'server', 'entry.mjs')))
     else:
-        server_path = os.path.normpath(os.path.join(os.path.dirname(__file__), 'dweam_web', 'dist', 'server', 'entry.mjs'))
+        server_path = os.path.abspath(os.path.normpath(os.path.join(os.path.dirname(__file__), 'dweam_web', 'dist', 'server', 'entry.mjs')))
     
     if not os.path.exists(server_path):
         logger.error(f"Server entry point not found at: {server_path}")
