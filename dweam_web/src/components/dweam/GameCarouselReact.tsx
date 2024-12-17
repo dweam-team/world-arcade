@@ -6,6 +6,7 @@ import { Navigation } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import './GameCarousel.css';
+import { api } from '~/lib/api';
 
 export default function GameCarouselReact() {
   const $games = useStore(games);
@@ -47,8 +48,8 @@ export default function GameCarouselReact() {
                     loop
                     autoPlay
                   >
-                    <source src={`/thumb/${type}/${id}.webm`} type="video/webm" />
-                    <source src={`/thumb/${type}/${id}.mp4`} type="video/mp4" />
+                    <source src={api.getGameThumbUrl(type, id, 'webm')} type="video/webm" />
+                    <source src={api.getGameThumbUrl(type, id, 'mp4')} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
                   <GameInfo game={game} />

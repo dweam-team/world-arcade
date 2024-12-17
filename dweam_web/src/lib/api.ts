@@ -100,6 +100,11 @@ class ApiClient {
       }),
     });
   }
+
+  // Add this new method
+  getGameThumbUrl(type: string, id: string, format: 'webm' | 'mp4'): string {
+    return `${this.getBaseUrl()}/thumb/${type}/${id}.${format}`;
+  }
 }
 
 export const api = new ApiClient(); 

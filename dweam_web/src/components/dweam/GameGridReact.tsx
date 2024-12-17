@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react';
 import { games, isLoading } from '~/stores/gameStore';
 import { useEffect, useRef } from 'react';
 import GameInfo from './GameInfo';
+import { api } from '~/lib/api';
 
 export default function GameGridReact() {
   const $games = useStore(games);
@@ -69,8 +70,8 @@ export default function GameGridReact() {
                     e.currentTarget.currentTime = 0;
                   }}
                 >
-                  <source src={`/thumb/${type}/${id}.webm`} type="video/webm" />
-                  <source src={`/thumb/${type}/${id}.mp4`} type="video/mp4" />
+                  <source src={api.getGameThumbUrl(type, id, 'webm')} type="video/webm" />
+                  <source src={api.getGameThumbUrl(type, id, 'mp4')} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
                 <GameInfo game={game} />
