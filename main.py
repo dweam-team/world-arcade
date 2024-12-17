@@ -334,7 +334,7 @@ def main():
     )
     
     # Start webview and wait for it to close
-    webview.start()
+    webview.start(debug=True)
     
     # Clean up when window closes
     logger.info("Cleaning up processes...")
