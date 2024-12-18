@@ -1,5 +1,20 @@
 const getBaseUrl = () => {
-  return process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
+  // In SSR context, use the environment variable
+  if (typeof window === 'undefined') {
+    console.log('[API] SSR context, using process.env.INTERNAL_BACKEND_URL:', process.env.INTERNAL_BACKEND_URL);
+    return process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
+  }
+  
+  // In client-side context, use the backend URL from the environment
+  // This is injected by the Python app into window._env_
+  if (window._env_?.INTERNAL_BACKEND_URL) {
+    console.log('[API] Client context, using window._env_.INTERNAL_BACKEND_URL:', window._env_.INTERNAL_BACKEND_URL);
+    return window._env_.INTERNAL_BACKEND_URL;
+  }
+  
+  // Fallback for development
+  console.log('[API] Using fallback localhost URL');
+  return 'http://localhost:8080';
 };
 
 type RequestOptions = RequestInit & {
