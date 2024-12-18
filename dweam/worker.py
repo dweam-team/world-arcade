@@ -82,7 +82,7 @@ class GameWorker:
         # Use importlib.resources to reliably locate the module file
         if getattr(sys, 'frozen', False):
             # In PyInstaller bundle
-            worker_script = Path(sys._MEIPASS) / "dweam" / "game_process.py"
+            worker_script = Path(sys._MEIPASS) / "dweam" / "dweam" / "game_process.py"
         else:
             # In development
             worker_script = files('dweam').joinpath('game_process.py')
