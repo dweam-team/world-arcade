@@ -1,7 +1,7 @@
 ---
 import Layout from '~/layouts/PageLayout.astro';
 import Header from '~/components/widgets/Header.astro';
-import GameView from '~/components/dweam/GameView.astro';
+import GameView from '~/components/dweam/GameViewReact';
 import ParamsPanel from '~/components/dweam/ParamsPanel.astro';
 import { api } from '~/lib/api';
 
@@ -61,7 +61,7 @@ try {
         </div>
       </div>
       <div id="game-view" class={`flex-grow sticky top-[150px] ${gameData && gameData.buttons ? '' : 'hidden'}`} style="height: fit-content;">
-        <GameView gameType={type} gameId={id} />
+        <GameView client:load gameType={type} gameId={id} />
       </div>
     </div>
 
