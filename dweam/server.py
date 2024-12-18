@@ -166,8 +166,13 @@ async def turn_credentials(
 ):
     turn_secret = os.environ.get('TURN_SECRET_KEY')
     if turn_secret is None:
-        log.error("TURN_SECRET_KEY not set in server mode")
-        raise HTTPException(status_code=500, detail="TURN server configuration missing")
+        return {
+            "username": "",
+            "credential": "",
+            "ttl": 86400,
+            "turn_urls": [],
+            "stun_urls": []  # No STUN needed for localhost
+        }
 
     credentials = create_turn_credentials(turn_secret)
     turn_base_url = request.base_url.hostname

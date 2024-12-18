@@ -127,24 +127,23 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
 
     let iceServers: RTCIceServer[] = [];
     
-    try {
-      const turnCredentials = await api.getTurnCredentials();
-      if (turnCredentials) {
-        iceServers = [
-          {
-            urls: turnCredentials.stun_urls,
-            username: turnCredentials.username,
-            credential: turnCredentials.credential
-          },
-          {
-            urls: turnCredentials.turn_urls,
-            username: turnCredentials.username,
-            credential: turnCredentials.credential
-          }
-        ];
+    const turnCredentials = await api.getTurnCredentials();
+    if (turnCredentials.turn_urls.length > 0 || turnCredentials.stun_urls.length > 0) {
+      // Production mode with ICE servers
+      if (turnCredentials.turn_urls.length > 0) {
+        iceServers.push({
+          urls: turnCredentials.turn_urls,
+          username: turnCredentials.username,
+          credential: turnCredentials.credential
+        });
       }
-    } catch (error) {
-      console.log('Running in local mode without TURN server');
+      if (turnCredentials.stun_urls.length > 0) {
+        iceServers.push({
+          urls: turnCredentials.stun_urls
+        });
+      }
+    } else {
+      console.log('Running in local mode without ICE servers');
     }
 
     pcRef.current = new RTCPeerConnection({ iceServers });
