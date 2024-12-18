@@ -1,5 +1,4 @@
 ---
-import { api } from "../../lib/api";
 
 interface Props {
   gameType: string;
@@ -16,7 +15,9 @@ const { gameType, gameId } = Astro.props;
   </div>
 </div>
 
-<script type="module" define:vars={{ gameType, gameId, api }}>
+<script type="module" define:vars={{ gameType, gameId }}>
+  import { api } from "/src/lib/api";
+
   const video = document.getElementById('video');
   const playOverlay = document.getElementById('playOverlay');
   let pc = null;
@@ -131,14 +132,11 @@ const { gameType, gameId } = Astro.props;
     await pc.setLocalDescription(offer);
 
     // Send the offer to the server with the game ID
-    const response = await api.createOffer(gameType, gameId, {
-      sdp: pc.localDescription.sdp,
-      type: pc.localDescription.type
-    });
-
-    // Check if the response is OK and parse it as JSON
-    if (response.ok) {
-      const answer = await response.json();
+    try {
+      const answer = await api.createOffer(gameType, gameId, {
+        sdp: pc.localDescription.sdp,
+        type: pc.localDescription.type
+      });
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
       
       const sessionId = answer.sessionId;
@@ -146,8 +144,8 @@ const { gameType, gameId } = Astro.props;
       window.dispatchEvent(new CustomEvent('gameSessionReady', {
         detail: { sessionId }
       }));
-    } else {
-      console.error('Failed to fetch the answer:', response.statusText);
+    } catch (error) {
+      console.error('Failed to fetch the answer:', error);
 
       // Display a friendly error message with an icon
       playOverlay.innerHTML = '<span style="font-size: 48px;">⚠️</span> Error';
