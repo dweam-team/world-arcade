@@ -31,34 +31,28 @@ DEFAULT_SOURCE_CONFIG = SourceConfig(
         "diamond_atari": [
             PathSource(
                 path=Path("diamond"),
-                metadata=Path("dweam.toml")
             ),
             GitBranchSource(
                 git="https://github.com/dweam-team/diamond",
                 branch="main",
-                metadata=Path("dweam.toml")
             ),
         ],
         # "diamond_csgo": [
         #     PathSource(
         #         path=Path("diamond_csgo"),
-        #         metadata=Path("dweam.toml")
         #     ),
         #     GitBranchSource(
         #         git="https://github.com/dweam-team/diamond",
         #         branch="csgo",
-        #         metadata=Path("dweam.toml")
         #     ),
         # ],
         # "lucid_v1": [
         #     PathSource(
         #         path=Path("lucid-v1"),
-        #         metadata=Path("dweam.toml")
         #     ),
         #     GitBranchSource(
         #         git="https://github.com/dweam-team/lucid-v1",
         #         branch="main",
-        #         metadata=Path("dweam.toml")
         #     ),
         # ]
     }
@@ -79,7 +73,7 @@ def get_pip_path(venv_path: Path) -> Path:
 
 
 def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, name: str) -> Path | None:
-    """Install a game from its source into the given venv and return the installation path"""
+    """Install a game from its source into the given venv and return the module path"""
     pip_path = get_pip_path(venv_path)
     
     if not pip_path.exists():
@@ -87,6 +81,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
         return None
 
     try:
+        # Install package based on source type
         if isinstance(source, PathSource):
             abs_path = source.path.absolute()
             if not abs_path.exists():
@@ -102,8 +97,6 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 log.error("Failed to install from local path")
                 return None
             
-            return abs_path
-            
         elif isinstance(source, GitBranchSource):
             git_url = f"git+{source.git}@{source.branch}#egg={name}"
             log.info("Installing from git", url=git_url)
@@ -115,24 +108,6 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             if result.returncode != 0:
                 log.error("Failed to install from git", stdout=result.stdout, stderr=result.stderr)
                 return None
-            log.debug("Git install output", stdout=result.stdout, stderr=result.stderr)
-            
-            # Clone into cache dir
-            cache_dir = get_cache_dir()
-            package_dir = (cache_dir / f"{name}-{uuid.uuid4()}").absolute()
-            package_dir.mkdir(parents=True, exist_ok=True)
-            
-            result = subprocess.run(
-                ["git", "clone", "-b", source.branch, source.git, str(package_dir)],
-                capture_output=True,
-                text=True
-            )
-            if result.returncode != 0:
-                log.error("Git clone failed", stdout=result.stdout, stderr=result.stderr)
-                return None
-            log.debug("Git clone output", stdout=result.stdout, stderr=result.stderr)
-            
-            return package_dir
             
         elif isinstance(source, PyPISource):
             log.info("Installing from PyPI", package=f"{name}=={source.version}")
@@ -148,26 +123,32 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                     returncode=e.returncode
                 )
                 return None
-                
-            site_packages = next((venv_path / "Lib" if sys.platform == "win32" else "lib").glob("python*/site-packages"))
-            return site_packages / name
             
         else:
             assert_never(source)
             return None
+
+        # Get the installed package location from pip show
+        result = subprocess.run(
+            [str(pip_path), "show", name],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            log.error("Failed to get package location", stdout=result.stdout, stderr=result.stderr)
+            return None
+            
+        # Parse the Location line from pip show output
+        for line in result.stdout.splitlines():
+            if line.startswith("Location: "):
+                return Path(line.split(": ")[1]) / name
+        
+        log.error("Could not find package location in pip show output")
+        return None
             
     except Exception as e:
         log.exception("Unexpected error installing game source")
         return None
-
-
-def load_game_source(install_path: Path, source: GameSource) -> PackageMetadata | None:
-    """Load game metadata from an installed source"""
-    metadata = load_metadata_from_path(install_path)
-    if metadata:
-        metadata._source = source
-        metadata._local_dir = install_path
-    return metadata
 
 
 def load_toml(file: BinaryIO) -> dict:
@@ -177,31 +158,77 @@ def load_toml(file: BinaryIO) -> dict:
     return toml_lib.load(file)
 
 
-def load_metadata_from_path(path: Path) -> PackageMetadata | None:
-    """Load metadata from a directory path (git clone or local path)"""
+def load_metadata_from_module(log: BoundLogger, module_name: str) -> PackageMetadata | None:
+    """Load metadata from an installed module by name"""
     try:
-        # First try dweam.toml
-        dweam_path = path / "dweam.toml"
-        if dweam_path.exists():
-            with open(dweam_path, "rb") as f:
-                data = load_toml(f)
-            return PackageMetadata.model_validate(data)
+        spec = importlib.util.find_spec(module_name)
+        if spec is None or spec.origin is None:
+            log.error("Module not found", module=module_name)
+            return None
+            
+        # Get the module's root directory
+        module_path = Path(spec.origin)
         
-        # Then try pyproject.toml
-        pyproject_path = path / "pyproject.toml"
-        if pyproject_path.exists():
-            with open(pyproject_path, "rb") as f:
-                pyproject_data = load_toml(f)
+        # First try dweam.toml in the module directory
+        dweam_path = module_path / "dweam.toml"
+        if not dweam_path.exists():
+            log.error("dweam.toml not found", path=str(dweam_path))
+            return None
+        
+        with open(dweam_path, "rb") as f:
+            data = load_toml(f)
+        metadata = PackageMetadata.model_validate(data)
+        metadata._module_dir = module_path
+        return metadata
+        
+        # FIXME similarly to the other [tool.dweam] explanation, this won't work
+        # # Then try pyproject.toml
+        # pyproject_path = module_path / "pyproject.toml"
+        # if pyproject_path.exists():
+        #     with open(pyproject_path, "rb") as f:
+        #         pyproject_data = load_toml(f)
                 
-            # Get the [tool.dweam] table
-            if "tool" in pyproject_data and "dweam" in pyproject_data["tool"]:
-                dweam_data = pyproject_data["tool"]["dweam"]
-                if "games" not in dweam_data:
-                    raise ValueError("No [tool.dweam.games] section found in pyproject.toml")
-                return PackageMetadata.model_validate(dweam_data)
-    except (TypeError, OSError) as e:
-        print(f"Error loading metadata from path: {e}")
-        pass
+        #     # Get the [tool.dweam] table
+        #     if "tool" in pyproject_data and "dweam" in pyproject_data["tool"]:
+        #         dweam_data = pyproject_data["tool"]["dweam"]
+        #         if "games" not in dweam_data:
+        #             raise ValueError("No [tool.dweam.games] section found in pyproject.toml")
+        #         return PackageMetadata.model_validate(dweam_data)
+    except (TypeError, OSError):
+        log.exception("Error loading metadata from module")
+    
+    return None
+
+
+def load_metadata_from_path(log: BoundLogger, path: Path) -> PackageMetadata | None:
+    """Load metadata from a module path"""
+    try:
+        # First try dweam.toml in the module directory
+        dweam_path = path / "dweam.toml"
+        if not dweam_path.exists():
+            return None
+        
+        with open(dweam_path, "rb") as f:
+            data = load_toml(f)
+        metadata = PackageMetadata.model_validate(data)
+        metadata._module_dir = path
+        return metadata
+        
+        # FIXME path is to the installed module, not the package, so pyproject tool.dweam won't work like this
+        # # Then try pyproject.toml
+        # pyproject_path = path / "pyproject.toml"
+        # if pyproject_path.exists():
+        #     with open(pyproject_path, "rb") as f:
+        #         pyproject_data = load_toml(f)
+                
+        #     # Get the [tool.dweam] table
+        #     if "tool" in pyproject_data and "dweam" in pyproject_data["tool"]:
+        #         dweam_data = pyproject_data["tool"]["dweam"]
+        #         if "games" not in dweam_data:
+        #             raise ValueError("No [tool.dweam.games] section found in pyproject.toml")
+        #         return PackageMetadata.model_validate(dweam_data)
+    except (TypeError, OSError):
+        log.exception("Error loading metadata from path")
     
     return None
 
@@ -252,24 +279,13 @@ def load_games(
             try:
                 if venv_path is not None:
                     # Install and load from venv
-                    source_path = install_game_source(log, venv_path, source, name)
-                    if source_path is None:
+                    module_path = install_game_source(log, venv_path, source, name)
+                    if module_path is None:
                         continue
-                    metadata = load_game_source(source_path, source)
+                    metadata = load_metadata_from_path(log, module_path)
                 else:
                     # Try to load from installed package
-                    try:
-                        spec = importlib.util.find_spec(name)
-                        if spec is None or spec.origin is None:
-                            continue
-                        package_path = Path(spec.origin).parent
-                        metadata = load_metadata_from_package(package_path)
-                        if metadata:
-                            metadata._source = source
-                            metadata._local_dir = package_path
-                    except ImportError:
-                        log.warning("Failed to load game from installed package", name=name, source=source, exc_info=True)
-                        continue
+                    metadata = load_metadata_from_module(log, name)
 
                 if metadata is None:
                     log.warning("No metadata found for game", name=name)

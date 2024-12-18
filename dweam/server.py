@@ -279,7 +279,9 @@ async def get_thumbnail(
     if not game_info._metadata:
         raise HTTPException(status_code=404, detail="Game metadata not found")
     
-    local_dir = game_info._metadata._local_dir
+    # FIXME instead of packaging thumbnails into the module, 
+    #  make it so that the worker doesn't need to download them as part of installation
+    local_dir = game_info._metadata._module_dir
     if local_dir is None:
         raise HTTPException(status_code=404, detail="Package not installed")
     if not local_dir.exists():
