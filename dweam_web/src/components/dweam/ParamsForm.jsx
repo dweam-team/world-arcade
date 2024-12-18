@@ -64,30 +64,23 @@ function ParamsForm({ gameType, gameId }) {
       setSessionId(sid);
 
       // Fetch schema when session is ready
-      try {
-        const response = await api.getParamsSchema(sid);
-        if (response.ok) {
-          const fullSchema = await response.json();
-          
-          // Extract UI schema from properties
-          const uiSchema = {};
-          const schema = { ...fullSchema };  // Clone the schema
-          
-          if (schema?.properties) {
-            for (const [key, prop] of Object.entries(schema.properties)) {
-              // UI Schema is stored directly in _ui_schema
-              if (prop._ui_schema) {
-                uiSchema[key] = prop._ui_schema;
-                delete prop._ui_schema;  // Clean up schema
-              }
-            }
+      const fullSchema = await api.getParamsSchema(sid);
+        
+      // Extract UI schema from properties
+      const uiSchema = {};
+      const schema = { ...fullSchema };  // Clone the schema
+      
+      if (schema?.properties) {
+        for (const [key, prop] of Object.entries(schema.properties)) {
+          // UI Schema is stored directly in _ui_schema
+          if (prop._ui_schema) {
+            uiSchema[key] = prop._ui_schema;
+            delete prop._ui_schema;  // Clean up schema
           }
-          
-          paramsSchema.set({ schema, uiSchema });
         }
-      } catch (error) {
-        console.error('Error fetching schema:', error);
       }
+      
+      paramsSchema.set({ schema, uiSchema });
     };
 
     window.addEventListener('gameSessionReady', handleSessionReady);
@@ -128,17 +121,7 @@ function ParamsForm({ gameType, gameId }) {
           originalEvent.preventDefault();
           if (!sessionId) return;
 
-          try {
-            const response = await api.getParamsSchema(sid);
-
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            console.log('Parameters updated successfully');
-          } catch (error) {
-            console.error('Error updating parameters:', error);
-          }
+          await api.updateParams(sessionId, formData);
         }}
       />
     </>
