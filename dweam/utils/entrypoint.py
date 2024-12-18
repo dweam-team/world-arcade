@@ -4,6 +4,7 @@ import os
 import uuid
 from typing_extensions import assert_never
 import subprocess
+import sys
 try:
     import tomli as toml_lib
 except ImportError:
@@ -14,7 +15,6 @@ except ImportError:
 from pathlib import Path
 from structlog.stdlib import BoundLogger
 import importlib.util
-import sys
 from typing import BinaryIO
 import shutil
 
