@@ -1,5 +1,26 @@
 const getBaseUrl = () => {
-  return process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
+  // In SSR context, use the environment variable
+  if (typeof window === 'undefined') {
+    // console.log('[API] SSR context, using process.env.INTERNAL_BACKEND_URL:', process.env.INTERNAL_BACKEND_URL);
+    return process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
+  }
+  
+  // Check if we're in development mode (Astro dev server)
+  const isDev = import.meta.env.DEV;
+  if (isDev) {
+    // console.log('[API] Development mode, using empty base URL (proxy)');
+    return '';
+  }
+
+  // In production client-side context, use the backend URL from the environment
+  if ((window as any)._env_?.INTERNAL_BACKEND_URL) {
+    // console.log('[API] Production client context, using window._env_.INTERNAL_BACKEND_URL:', (window as any)._env_.INTERNAL_BACKEND_URL);
+    return (window as any)._env_.INTERNAL_BACKEND_URL;
+  }
+  
+  // Fallback for production without env
+  // console.log('[API] Using fallback localhost URL');
+  return 'http://localhost:8080';
 };
 
 type RequestOptions = RequestInit & {
@@ -15,16 +36,19 @@ class ApiClient {
 
   private async request<T>(endpoint: string, options: RequestOptions = { method: 'GET' }): Promise<T> {
     const { params, ...fetchOptions } = options;
-    const url = new URL(`${this.getBaseUrl()}${endpoint}`);
+    
+    let urlString = this.getBaseUrl() + endpoint;
     
     if (params) {
+      const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
-        url.searchParams.append(key, value);
+        searchParams.append(key, value);
       });
+      urlString += `?${searchParams.toString()}`;
     }
 
     try {
-      const response = await fetch(url.toString(), {
+      const response = await fetch(urlString, {
         ...fetchOptions,
         credentials: 'include',
         headers: {

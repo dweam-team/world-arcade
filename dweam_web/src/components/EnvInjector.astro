@@ -1,0 +1,12 @@
+---
+// Get environment variables during SSR
+const envVars = {
+  INTERNAL_BACKEND_URL: import.meta.env.INTERNAL_BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080'
+};
+---
+
+<script define:vars={{ envVars }}>
+  // This script runs in the browser and has access to the SSR-injected envVars
+  window._env_ = envVars;
+  console.log('Injected environment variables:', window._env_);
+</script> 

@@ -17,7 +17,9 @@ def Field(*args, ui_schema: dict | None = None, **kwargs):
 
 class BaseSource(StrictModel):
     """Base class for all dependency sources"""
-    metadata: Path = Field(default=Path("dweam.toml"), description="Path to the package's game metadata file")
+    pass
+    # FIXME support nonstandard metadata locations?
+    # metadata: Path = Field(default=Path("dweam.toml"), description="Path to the package's game metadata file")
 
 
 class PathSource(BaseSource):
@@ -76,8 +78,7 @@ class PackageMetadata(StrictModel):
     repo_link: str | None = None
     thumbnail_dir: str = Field(default="thumbnails", description="Directory containing thumbnail videos (gif/webm/mp4)")
     games: dict[str, GameInfo]
-    _source: GameSource | None = PrivateAttr(None)
-    _local_dir: Path | None = PrivateAttr(None)
+    _module_dir: Path | None = PrivateAttr(None)
 
 
 class SourceConfig(StrictModel):

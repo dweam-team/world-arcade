@@ -28,7 +28,6 @@ class GameWorker:
         log: BoundLogger,
         game_info: GameInfo,
         session_id: str,
-        local_only: bool,
         game_type: str,
         game_id: str,
         venv_path: Path,
@@ -38,7 +37,6 @@ class GameWorker:
         self.game_type = game_type
         self.game_id = game_id
         self.session_id = session_id
-        self.local_only = local_only
         self.venv_path = venv_path
 
         self.last_heartbeat = datetime.now()
@@ -76,7 +74,10 @@ class GameWorker:
 
     async def start(self):
         """Start the worker process and establish communication"""
-        venv_python = self.venv_path / "bin" / "python"
+        if sys.platform == "win32":
+            venv_python = self.venv_path / "Scripts" / "python.exe"
+        else:
+            venv_python = self.venv_path / "bin" / "python"
         
         # Use importlib.resources to reliably locate the module file
         if getattr(sys, 'frozen', False):

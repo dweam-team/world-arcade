@@ -163,10 +163,17 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path):
             raise RuntimeError(f"dweam package files not found at {dweam_path}")
     else:
         # In development - get the package root directory
-        from importlib.resources.abc import Traversable
-        dweam_root: Traversable = files('dweam')
-        dweam_path = Path(str(dweam_root)).parent
-    
+        try:
+            # python 3.11+
+            from importlib.resources.abc import Traversable
+            dweam_root: Traversable = files('dweam')
+            dweam_path = Path(str(dweam_root)).parent
+        except Exception as e:
+            # python 3.10-
+            import inspect
+            dweam_path = Path(inspect.getsourcefile(dweam)).parent.parent
+
+
     # Get installed version using pip show
     result = subprocess.run(
         [str(pip_path), "show", "dweam"],
@@ -195,7 +202,7 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path):
     # If dweam isn't installed from our path, reinstall it
     # TODO this wrongly detects incorrect install methinks
     if not install_location or not Path(install_location).samefile(dweam_path):
-        log.warning("dweam is not installed from the correct location, reinstalling")
+        log.warning("dweam is not installed from the correct location, reinstalling", new_location=dweam_path, old_location=install_location)
         result = subprocess.run(
             [str(pip_path), "install", "-e", str(dweam_path)],
             text=True

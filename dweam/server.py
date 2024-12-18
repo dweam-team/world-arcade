@@ -46,12 +46,6 @@ def logger_dependency() -> BoundLogger:
     global log
     return log
 
-def is_local_only() -> bool:
-    local_var = os.environ.get('LOCAL_ONLY', '')
-    if local_var == "0":
-        return False
-    return bool(local_var)
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global game_loading_thread
@@ -125,7 +119,6 @@ async def offer(
     type: str = Path(...),
     id: str = Path(...),
     log: BoundLogger = Depends(logger_dependency),
-    local_only: bool = Depends(is_local_only),
 ):
     if type not in games:
         raise HTTPException(status_code=404, detail="Game type not found")
@@ -143,7 +136,6 @@ async def offer(
         log=log,
         game_info=game_info,
         session_id=session_id,
-        local_only=local_only,
         game_type=type,
         game_id=id,
         venv_path=get_venv_path(log)
@@ -171,16 +163,16 @@ async def health_check():
 async def turn_credentials(
     request: Request,
     log: BoundLogger = Depends(logger_dependency),
-    local_only: bool = Depends(is_local_only),
 ):
-    if local_only:
-        log.info("TURN credentials requested in local mode")
-        raise HTTPException(status_code=404, detail="TURN server not available in local mode")
-
     turn_secret = os.environ.get('TURN_SECRET_KEY')
     if turn_secret is None:
-        log.error("TURN_SECRET_KEY not set in server mode")
-        raise HTTPException(status_code=500, detail="TURN server configuration missing")
+        return {
+            "username": "",
+            "credential": "",
+            "ttl": 86400,
+            "turn_urls": [],
+            "stun_urls": []  # No STUN needed for localhost
+        }
 
     credentials = create_turn_credentials(turn_secret)
     turn_base_url = request.base_url.hostname
@@ -234,7 +226,6 @@ async def get_params_schema(
         game_info=game_info,
         session_id=session_id,
         venv_path=get_venv_path(log),
-        local_only=True,
         game_type=type,
         game_id=id
     )
@@ -288,7 +279,9 @@ async def get_thumbnail(
     if not game_info._metadata:
         raise HTTPException(status_code=404, detail="Game metadata not found")
     
-    local_dir = game_info._metadata._local_dir
+    # FIXME instead of packaging thumbnails into the module, 
+    #  make it so that the worker doesn't need to download them as part of installation
+    local_dir = game_info._metadata._module_dir
     if local_dir is None:
         raise HTTPException(status_code=404, detail="Package not installed")
     if not local_dir.exists():
