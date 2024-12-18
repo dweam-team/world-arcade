@@ -5,14 +5,20 @@ const getBaseUrl = () => {
     return process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
   }
   
-  // In client-side context, use the backend URL from the environment
-  // This is injected by the Python app into window._env_
-  if (window._env_?.INTERNAL_BACKEND_URL) {
-    console.log('[API] Client context, using window._env_.INTERNAL_BACKEND_URL:', window._env_.INTERNAL_BACKEND_URL);
-    return window._env_.INTERNAL_BACKEND_URL;
+  // Check if we're in development mode (Astro dev server)
+  const isDev = import.meta.env.DEV;
+  if (isDev) {
+    console.log('[API] Development mode, using empty base URL (proxy)');
+    return '';
+  }
+
+  // In production client-side context, use the backend URL from the environment
+  if ((window as any)._env_?.INTERNAL_BACKEND_URL) {
+    console.log('[API] Production client context, using window._env_.INTERNAL_BACKEND_URL:', (window as any)._env_.INTERNAL_BACKEND_URL);
+    return (window as any)._env_.INTERNAL_BACKEND_URL;
   }
   
-  // Fallback for development
+  // Fallback for production without env
   console.log('[API] Using fallback localhost URL');
   return 'http://localhost:8080';
 };
@@ -30,16 +36,19 @@ class ApiClient {
 
   private async request<T>(endpoint: string, options: RequestOptions = { method: 'GET' }): Promise<T> {
     const { params, ...fetchOptions } = options;
-    const url = new URL(`${this.getBaseUrl()}${endpoint}`);
+    
+    let urlString = this.getBaseUrl() + endpoint;
     
     if (params) {
+      const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
-        url.searchParams.append(key, value);
+        searchParams.append(key, value);
       });
+      urlString += `?${searchParams.toString()}`;
     }
 
     try {
-      const response = await fetch(url.toString(), {
+      const response = await fetch(urlString, {
         ...fetchOptions,
         credentials: 'include',
         headers: {
