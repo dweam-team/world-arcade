@@ -99,6 +99,30 @@ export default defineConfig({
     },
     plugins: [yaml()],
     envPrefix: ['PUBLIC_', 'INTERNAL_'],
+    server: {
+      port: 4321,
+      host: true,
+      proxy: {
+        '/offer': {
+          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
+        },
+        '/game_info': {
+          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
+        },
+        '/turn-credentials': {
+          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
+        },
+        '/params': {
+          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
+        },
+        '/status': {
+          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
+        },
+        '/thumb': {
+          target: process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080',
+        },
+      },
+    },
   },
 
   adapter: node({
