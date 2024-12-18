@@ -16,6 +16,36 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const heartbeatIntervalRef = useRef<number | null>(null);
 
+  const cleanup = () => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+    
+    if (dataChannelRef.current) {
+      dataChannelRef.current.close();
+      dataChannelRef.current = null;
+    }
+    
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
+      videoRef.current.srcObject = null;
+    }
+    
+    setConnectionState('disconnected');
+    window.dispatchEvent(new CustomEvent('gameSessionEnd'));
+    console.log('Cleanup completed');
+  };
+
   useEffect(() => {
     const handleKeydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -89,36 +119,14 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
-
-      if (heartbeatIntervalRef.current) {
-        clearInterval(heartbeatIntervalRef.current);
-        heartbeatIntervalRef.current = null;
-      }
-      
-      if (dataChannelRef.current) {
-        dataChannelRef.current.close();
-        dataChannelRef.current = null;
-      }
-      
-      if (pcRef.current) {
-        pcRef.current.close();
-        pcRef.current = null;
-      }
-
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => {
-          track.stop();
-          track.enabled = false;
-        });
-        videoRef.current.srcObject = null;
-      }
-      
-      setConnectionState('disconnected');
-      window.dispatchEvent(new CustomEvent('gameSessionEnd'));
-      console.log('Cleanup completed in useEffect');
     };
   }, [isPointerLocked]);
+
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, []);
 
   const startPlayback = async () => {
     if (connectionState === 'connecting') return;
