@@ -90,7 +90,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 
             log.info("Installing from local path", path=str(abs_path))
             result = subprocess.run(
-                [str(pip_path), "install", "-e", str(abs_path)],
+                [str(pip_path), "install", "--force-reinstall", "--no-deps", "-e", str(abs_path)],
                 text=True
             )
             if result.returncode != 0:
@@ -102,7 +102,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             log.info("Installing from git", url=git_url)
             
             result = subprocess.run(
-                [str(pip_path), "install", git_url],
+                [str(pip_path), "install", "--force-reinstall", "--no-deps", git_url],
                 text=True
             )
             if result.returncode != 0:
@@ -113,7 +113,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             log.info("Installing from PyPI", package=f"{name}=={source.version}")
             try:
                 subprocess.run(
-                    [str(pip_path), "install", f"{name}=={source.version}"],
+                    [str(pip_path), "install", "--force-reinstall", "--no-deps", f"{name}=={source.version}"],
                     check=True,
                     text=True
                 )
