@@ -28,6 +28,24 @@ from dweam.utils.venv import ensure_correct_dweam_version
 # Define default sources for each game
 DEFAULT_SOURCE_CONFIG = SourceConfig(
     packages={
+        "lucid_v1": [
+            PathSource(
+                path=Path("lucid-v1"),
+            ),
+            GitBranchSource(
+                git="https://github.com/dweam-team/lucid-v1",
+                branch="master",
+            ),
+        ],
+        "diamond_csgo": [
+            PathSource(
+                path=Path("diamond-csgo"),
+            ),
+            GitBranchSource(
+                git="https://github.com/dweam-team/diamond",
+                branch="csgo",
+            ),
+        ],
         "diamond_atari": [
             PathSource(
                 path=Path("diamond"),
@@ -37,24 +55,6 @@ DEFAULT_SOURCE_CONFIG = SourceConfig(
                 branch="main",
             ),
         ],
-        # "diamond_csgo": [
-        #     PathSource(
-        #         path=Path("diamond_csgo"),
-        #     ),
-        #     GitBranchSource(
-        #         git="https://github.com/dweam-team/diamond",
-        #         branch="csgo",
-        #     ),
-        # ],
-        # "lucid_v1": [
-        #     PathSource(
-        #         path=Path("lucid-v1"),
-        #     ),
-        #     GitBranchSource(
-        #         git="https://github.com/dweam-team/lucid-v1",
-        #         branch="main",
-        #     ),
-        # ]
     }
 )
 
@@ -138,10 +138,20 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             log.error("Failed to get package location", stdout=result.stdout, stderr=result.stderr)
             return None
             
-        # Parse the Location line from pip show output
+        # Parse the Location and Editable project location from pip show output
+        location = None
+        editable_location = None
         for line in result.stdout.splitlines():
-            if line.startswith("Location: "):
-                return Path(line.split(": ")[1]) / name
+            if line.startswith("Editable project location: "):
+                editable_location = Path(line.split(": ")[1]) / name
+            elif line.startswith("Location: "):
+                location = Path(line.split(": ")[1]) / name
+        
+        # Prefer editable location if available
+        if editable_location is not None:
+            return editable_location
+        elif location is not None:
+            return location
         
         log.error("Could not find package location in pip show output")
         return None
@@ -206,6 +216,7 @@ def load_metadata_from_path(log: BoundLogger, path: Path) -> PackageMetadata | N
         # First try dweam.toml in the module directory
         dweam_path = path / "dweam.toml"
         if not dweam_path.exists():
+            log.error("dweam.toml not found", path=str(dweam_path))
             return None
         
         with open(dweam_path, "rb") as f:
@@ -288,7 +299,7 @@ def load_games(
                     metadata = load_metadata_from_module(log, name)
 
                 if metadata is None:
-                    log.warning("No metadata found for game", name=name)
+                    log.error("No metadata found for game", name=name)
                     continue
                     
                 # Add game info to the games dict
