@@ -1,5 +1,5 @@
 import { getPermalink, getBlogPermalink, getAsset } from './utils/permalinks';
-import { DISCORD_LINK } from './components/constants'; // Import the constant
+import { DISCORD_LINK, GITHUB_LINK, TWITTER_LINK, BLUESKY_LINK, CONTACT_EMAIL } from './components/constants'; // Import the constant
 
 export const headerData = {
   links: [
@@ -118,6 +118,12 @@ export const headerData = {
   ],
   actions: [
     {
+      text: 'Github',
+      href: GITHUB_LINK,
+      target: '_blank',
+      icon: 'tabler:brand-github',
+    },
+    {
       text: 'Discord',
       href: DISCORD_LINK,
       target: '_blank',
@@ -161,8 +167,9 @@ export const footerData = {
   //     ],
   //   },
   //   {
-  //     title: 'Company',
-  //     links: [
+  title: 'Company',
+  links: [
+    { text: 'Contact us', href: CONTACT_EMAIL },
   //       { text: 'About', href: '#' },
   //       { text: 'Blog', href: '#' },
   //       { text: 'Careers', href: '#' },
@@ -176,14 +183,13 @@ export const footerData = {
   // secondaryLinks: [
   //   { text: 'Terms', href: getPermalink('/terms') },
   //   { text: 'Privacy Policy', href: getPermalink('/privacy') },
-  // ],
-  // socialLinks: [
-  //   { ariaLabel: 'X', icon: 'tabler:brand-x', href: '#' },
-  //   { ariaLabel: 'Instagram', icon: 'tabler:brand-instagram', href: '#' },
-  //   { ariaLabel: 'Facebook', icon: 'tabler:brand-facebook', href: '#' },
-  //   { ariaLabel: 'RSS', icon: 'tabler:rss', href: getAsset('/rss.xml') },
-  //   { ariaLabel: 'Github', icon: 'tabler:brand-github', href: 'https://github.com/onwidget/astrowind' },
-  // ],
+  ],
+  socialLinks: [
+    { ariaLabel: 'Twitter', icon: 'tabler:brand-x', href: TWITTER_LINK },
+    { ariaLabel: 'Discord', icon: 'tabler:brand-discord', href: DISCORD_LINK },
+    { ariaLabel: 'Github', icon: 'tabler:brand-github', href: GITHUB_LINK },
+    { ariaLabel: 'Bluesky', icon: 'tabler:brand-bluesky', href: BLUESKY_LINK },
+  ],
   // footNote: `
   //   <img class="w-5 h-5 md:w-6 md:h-6 md:-mt-0.5 bg-cover mr-1.5 rtl:mr-0 rtl:ml-1.5 float-left rtl:float-right rounded-sm" src="https://onwidget.com/favicon/favicon-32x32.png" alt="onWidget logo" loading="lazy"></img>
   //   Made by <a class="text-blue-600 underline dark:text-muted" href="https://onwidget.com/"> onWidget</a> · All rights reserved.
