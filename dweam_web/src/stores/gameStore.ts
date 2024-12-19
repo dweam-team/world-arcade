@@ -2,7 +2,6 @@ import { atom } from 'nanostores';
 import { api } from '../lib/api';
 
 export interface GameInfo {
-  type: string;
   id: string;
   title: string | null;
   description: string | null;

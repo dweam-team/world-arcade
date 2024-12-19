@@ -52,7 +52,7 @@ export default function GameCarouselReact() {
                     <source src={api.getGameThumbUrl(type, id, 'mp4')} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
-                  <GameInfo game={game} />
+                  <GameInfo type={type} game={game} />
                 </a>
               </div>
             </SwiperSlide>

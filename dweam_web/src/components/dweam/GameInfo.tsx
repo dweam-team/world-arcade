@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import type { GameInfo as GameInfoType } from '~/stores/gameStore';
 
 interface GameInfoProps {
+  type: string;
   game: GameInfoType;
 }
 
@@ -53,7 +54,9 @@ const styles = {
   } satisfies CSSProperties,
 
   typeTag: {
-    background: 'rgba(255, 165, 0, 0.1)',
+    background: 'rgba(255, 165, 0, 0.3)',
+    boxShadow: '0 0 8px rgba(255, 165, 0, 0.2)',
+    borderColor: 'rgba(255, 165, 0, 0.4)',
   } satisfies CSSProperties,
 } as const;
 
@@ -81,13 +84,13 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(styleSheet);
 }
 
-export default function GameInfo({ game }: GameInfoProps) {
+export default function GameInfo({ type, game }: GameInfoProps) {
   return (
     <div style={styles.gameInfo} className="game-info">
       <h2 style={styles.gameName} className="game-name">{game.title || game.id}</h2>
       <div style={styles.gameTags} className="game-tags">
-        {game.type && (
-          <span style={{ ...styles.tag, ...styles.typeTag }}>{game.type}</span>
+        {type && (
+          <span style={{ ...styles.tag, ...styles.typeTag }}>{type}</span>
         )}
         {game.tags?.map((tag) => (
           <span key={tag} style={styles.tag}>{tag}</span>
