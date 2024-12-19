@@ -50,27 +50,23 @@ class GameWorker:
         # WebRTC
         self.pc: Optional[RTCPeerConnection] = None
 
-    async def _monitor_stdout(self):
-        """Monitor stdout of the worker process and log any output"""
-        if not self.process or not self.process.stdout:
+    async def _monitor_process_output(self, stream: StreamReader | None, stream_name: str):
+        """Monitor output stream of the worker process and log any output"""
+        if stream is None:
+            self.log.error("Failed to monitor worker stream – stream is None", stream_name=stream_name)
             return
         
         while True:
-            line = await self.process.stdout.readline()
+            line = await stream.readline()
             if not line:
                 break
-            self.log.info("Worker stdout:", line=line.decode().rstrip())
-
-    async def _monitor_stderr(self):
-        """Monitor stderr of the worker process and log any output"""
-        if not self.process or not self.process.stderr:
-            return
-            
-        while True:
-            line = await self.process.stderr.readline()
-            if not line:
-                break
-            self.log.info("Worker stderr:", error=line.decode().rstrip())
+            try:
+                # Try UTF-8 first
+                output_line = line.decode('utf-8').rstrip()
+            except UnicodeDecodeError:
+                # Fall back to a more lenient encoding that replaces invalid characters
+                output_line = line.decode('utf-8', errors='replace').rstrip()
+            self.log.info(f"Worker {stream_name}:", line=output_line)
 
     async def start(self):
         """Start the worker process and establish communication"""
@@ -167,8 +163,8 @@ class GameWorker:
                     raise RuntimeError("No connection received")
                 
                 # Only start monitoring after successful connection
-                asyncio.create_task(self._monitor_stdout())
-                asyncio.create_task(self._monitor_stderr())
+                asyncio.create_task(self._monitor_process_output(self.process.stdout, "stdout"))
+                asyncio.create_task(self._monitor_process_output(self.process.stderr, "stderr"))
                 
                 self.log.info("Client connected")
 
