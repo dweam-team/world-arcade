@@ -160,7 +160,7 @@ async def main():
 
     # Load the game implementation
     games = load_games(log)
-    log.info("Loaded games", games=games)
+    log.info("Loaded games")
     log.info("Looking up game", game_type=game_type, game_id=game_id)
     
     # Check if game_type exists
