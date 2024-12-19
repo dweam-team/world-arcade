@@ -177,7 +177,7 @@ def load_metadata_from_module(log: BoundLogger, module_name: str) -> PackageMeta
             return None
             
         # Get the module's root directory
-        module_path = Path(spec.origin)
+        module_path = Path(spec.origin).parent
         
         # First try dweam.toml in the module directory
         dweam_path = module_path / "dweam.toml"
