@@ -117,6 +117,7 @@ class GameWorker:
             str(worker_script),
             self.game_type,
             self.game_id,
+            # TODO how does this work without the ICE servers...?
             json.dumps([]),  # Add empty ice servers
             str(port),  # Pass port number
             stdin=asyncio.subprocess.PIPE,
