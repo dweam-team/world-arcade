@@ -6,7 +6,7 @@ authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10,<3.13"
+python = ">=3.10,<3.12"
 aiortc = "^1.9.0"
 av = "<13.0.0"
 pygame = "^2.5.2"
@@ -20,8 +20,9 @@ structlog = "^24.4.0"
 pywebview = { version = "^4.4.1", optional = true }
 
 # Add more games here!
-diamond_atari = { git = "https://github.com/dweam-team/diamond", branch = "main" }
-diamond_csgo = { git = "https://github.com/dweam-team/diamond", branch = "csgo" }
+diamond_atari = { path = "diamond" }
+diamond_csgo = { path = "diamond-csgo" }
+lucid_v1 = { path = "lucid-v1" } 
 
 [tool.poetry.extras]
 local = ["pywebview"]  # Dependencies needed for local desktop app
