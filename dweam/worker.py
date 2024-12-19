@@ -115,7 +115,7 @@ class GameWorker:
         self.process = await asyncio.create_subprocess_exec(
             str(venv_python),
             str(worker_script),
-            self.game_type,
+            json.dumps(self.game_type),  # JSON encode to preserve spaces
             self.game_id,
             # TODO how does this work without the ICE servers...?
             json.dumps([]),  # Add empty ice servers

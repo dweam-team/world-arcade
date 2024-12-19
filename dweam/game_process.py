@@ -140,7 +140,7 @@ async def main():
     log.info("Command line args", argv=sys.argv)
     
     # Get game type, ID and optional ICE servers from command line args
-    game_type = sys.argv[1]
+    game_type = json.loads(sys.argv[1])  # Decode JSON-encoded game type
     game_id = sys.argv[2]
     ice_servers = json.loads(sys.argv[3]) if len(sys.argv) > 3 else None
     port = int(sys.argv[4])
