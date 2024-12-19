@@ -234,8 +234,6 @@ async def main():
                         game = implementation(
                             log=log,
                             game_id=game_id,
-                            fps=30,
-                            device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
                         )
                         game.start()
                     rtc = GameRTCConnection(game, ice_servers)

@@ -33,22 +33,16 @@ class Game:
         *,
         log: BoundLogger, 
         game_id: str,
-        fps: int,
-        device: "torch.device",  # can't import torch here, only in worker process
     ):
         """Initialize game instance
         
         Args:
             log: Structured logger instance
             game_id: Specific game identifier (one of the ids from `game_info`)
-            fps: Game's target FPS, managed by `pygame.time.Clock`
-            size: Game's window size
-            device: Device to run the game on
         """
         self.log = log
         self.game_id = game_id
-        self.fps = fps
-        self.device = device
+
         self.params = type(self).Params()
 
         pygame.init()
@@ -184,7 +178,7 @@ class Game:
                 self._frame_buffer.put_nowait(surface)
             self.one_step_queued = False
 
-            self.clock.tick(self.fps)
+            self.clock.tick(30)  # TODO unhardcode FPS
 
         # pygame.quit()
 
