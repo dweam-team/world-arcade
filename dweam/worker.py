@@ -150,9 +150,19 @@ class GameWorker:
             
         except asyncio.TimeoutError:
             self.log.error("Timeout waiting for worker to connect")
-            # Check if process has failed
-            if self.process.returncode is not None:
-                self.log.error("Worker process failed", returncode=self.process.returncode)
+            # Check process state
+            if self.process.stderr:
+                stderr_data = (await self.process.stderr.read()).decode()
+            else:
+                stderr_data = None
+            if self.process.stdout:
+                stdout_data = (await self.process.stdout.read()).decode()
+            else:
+                stdout_data = None
+            if self.process.returncode is None:
+                self.log.error("Worker process is still running but failed to connect", stderr=stderr_data, stdout=stdout_data)
+            else:
+                self.log.error("Worker process failed", returncode=self.process.returncode, stderr=stderr_data, stdout=stdout_data)
             raise
         except Exception as e:
             self.log.error("Error during connection", error=str(e))
