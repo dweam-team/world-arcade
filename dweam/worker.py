@@ -125,45 +125,53 @@ class GameWorker:
             stderr=asyncio.subprocess.PIPE
         )
         self.log.info("Started worker process", pid=self.process.pid)
-        
-        # Start monitoring stderr and stdout immediately
-        asyncio.create_task(self._monitor_stderr())
-        asyncio.create_task(self._monitor_stdout())
-        
-        # Wait for client connection with timeout
+
+        # Try to connect with timeout
         try:
             # Start serving (but don't block)
             async with server:
                 server_task = asyncio.create_task(server.serve_forever())
-                # Wait for client to connect with timeout
-                await asyncio.wait_for(client_connected.wait(), timeout=5)
-                # Once connected, cancel the server task
-                server_task.cancel()
+                
                 try:
-                    await server_task
-                except asyncio.CancelledError:
-                    pass
-                    
-            if not self.reader or not self.writer:
-                raise RuntimeError("No connection received")
-            self.log.info("Client connected")
-            
-        except asyncio.TimeoutError:
-            self.log.error("Timeout waiting for worker to connect")
-            # Check process state
-            if self.process.stderr:
-                stderr_data = (await self.process.stderr.read()).decode()
-            else:
-                stderr_data = None
-            if self.process.stdout:
-                stdout_data = (await self.process.stdout.read()).decode()
-            else:
-                stdout_data = None
-            if self.process.returncode is None:
-                self.log.error("Worker process is still running but failed to connect", stderr=stderr_data, stdout=stdout_data)
-            else:
-                self.log.error("Worker process failed", returncode=self.process.returncode, stderr=stderr_data, stdout=stdout_data)
-            raise
+                    await asyncio.wait_for(client_connected.wait(), timeout=5)
+                except asyncio.TimeoutError:
+                    # If timeout occurs, collect stderr/stdout before raising
+                    if self.process.stderr:
+                        stderr_data = await self.process.stderr.read()
+                        stderr_str = stderr_data.decode() if stderr_data else None
+                    else:
+                        stderr_str = None
+                        
+                    if self.process.stdout:
+                        stdout_data = await self.process.stdout.read()
+                        stdout_str = stdout_data.decode() if stdout_data else None
+                    else:
+                        stdout_str = None
+                        
+                    self.log.error(
+                        "Worker failed to connect",
+                        returncode=self.process.returncode,
+                        stderr=stderr_str,
+                        stdout=stdout_str
+                    )
+                    raise TimeoutError("Worker process failed to connect")
+                finally:
+                    # Cancel server task
+                    server_task.cancel()
+                    try:
+                        await server_task
+                    except asyncio.CancelledError:
+                        pass
+
+                if not self.reader or not self.writer:
+                    raise RuntimeError("No connection received")
+                
+                # Only start monitoring after successful connection
+                asyncio.create_task(self._monitor_stdout())
+                asyncio.create_task(self._monitor_stderr())
+                
+                self.log.info("Client connected")
+
         except Exception as e:
             self.log.error("Error during connection", error=str(e))
             raise
