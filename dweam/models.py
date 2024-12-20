@@ -1,5 +1,5 @@
 import json
-from typing import Any, Literal, Union
+from typing import Any, Literal, Mapping, Sequence, Union
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field as PydanticField, PrivateAttr
 import pydantic
@@ -87,7 +87,7 @@ class PackageMetadata(StrictModel):
 class SourceConfig(StrictModel):
     """Main configuration file model for managing game sources.
     This configuration lives in dweam-sources.toml and defines where to find game packages."""
-    packages: dict[str, list[GameSource]]
+    packages: Mapping[str, Sequence[GameSource]]
 
 
 class ParamsUpdate(BaseModel):
