@@ -1,9 +1,117 @@
-import Form from '@rjsf/bootstrap-4';
+import Form from '@rjsf/core';
 import validator from '@rjsf/validator-ajv8';
 import { useEffect, useState } from 'react';
 import { paramsSchema } from '~/stores/gameStore';
 import { useStore } from '@nanostores/react';
 import { api } from '~/lib/api';
+
+const CustomInput = (props) => {
+  const { id, value, required, disabled, onChange, schema } = props;
+  return (
+    <input
+      id={id}
+      className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg
+                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                 text-white placeholder-gray-500
+                 disabled:opacity-50 disabled:cursor-not-allowed"
+      value={value || ''}
+      required={required}
+      disabled={disabled}
+      onChange={(event) => onChange(event.target.value)}
+      type={schema.type === 'number' ? 'number' : 'text'}
+    />
+  );
+};
+
+const CustomCheckbox = (props) => {
+  const { id, value, disabled, onChange, label } = props;
+  return (
+    <div className="flex items-center">
+      <input
+        id={id}
+        type="checkbox"
+        className="h-5 w-5 rounded border-gray-700 bg-gray-900/50
+                   text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-800
+                   disabled:opacity-50 disabled:cursor-not-allowed"
+        checked={value || false}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      <label htmlFor={id} className="ml-2 text-gray-300">
+        {label}
+      </label>
+    </div>
+  );
+};
+
+const CustomSelect = (props) => {
+  const { id, options, value, required, disabled, onChange } = props;
+  return (
+    <select
+      id={id}
+      className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg
+                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                 text-white
+                 disabled:opacity-50 disabled:cursor-not-allowed
+                 text-base"
+      value={value || ''}
+      required={required}
+      disabled={disabled}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      {options.enumOptions.map(({ label, value }) => (
+        <option key={value} value={value} className="bg-gray-800 text-white py-2">
+          {label}
+        </option>
+      ))}
+    </select>
+  );
+};
+
+const CustomFieldTemplate = (props) => {
+  const { id, label, help, required, description, errors, children } = props;
+  return (
+    <div className="mb-8 pd-4">
+      <label htmlFor={id} className="block text-lg text-gray-300 mb-2">
+        {label}
+        {required && <span className="text-red-400 ml-1">*</span>}
+      </label>
+      {children}
+      {description && <p className="text-sm text-gray-600 mt-2">{description}</p>}
+      {errors && <div className="text-red-400 text-sm mt-2">{errors}</div>}
+      {help && <div className="text-sm text-gray-600 mt-2">{help}</div>}
+    </div>
+  );
+};
+
+const CustomObjectFieldTemplate = (props) => {
+  const { title, description, properties } = props;
+  return (
+    <div>
+      {title && <h3 className="text-xl text-gray-200 font-semibold mb-4">{title}</h3>}
+      {description && <p className="text-sm text-gray-500 mb-6">{description}</p>}
+      <div className="flex flex-col gap-16">
+        {properties.map((prop) => prop.content)}
+      </div>
+    </div>
+  );
+};
+
+const theme = {
+  widgets: {
+    TextWidget: CustomInput,
+    CheckboxWidget: CustomCheckbox,
+    SelectWidget: CustomSelect,
+  },
+  FieldTemplate: CustomFieldTemplate,
+  ObjectFieldTemplate: CustomObjectFieldTemplate,
+};
+
+// Create the form with custom theme
+Form.defaultProps = {
+  ...Form.defaultProps,
+  ...theme
+};
 
 function ParamsPanelReact({ gameType, gameId }) {
   const [isClient, setIsClient] = useState(false);
@@ -19,49 +127,6 @@ function ParamsPanelReact({ gameType, gameId }) {
     setIsClient(true);
     setIsDark(document.documentElement.classList.contains('dark'));
 
-    // Add Bootstrap CSS
-    const bootstrapCSS = document.createElement('link');
-    bootstrapCSS.href = 'https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css';
-    bootstrapCSS.rel = 'stylesheet';
-    document.head.appendChild(bootstrapCSS);
-
-    // Function to update theme
-    const updateTheme = () => {
-      const isDarkMode = document.documentElement.classList.contains('dark');
-      setIsDark(isDarkMode);
-      
-      // Remove old dark theme if it exists
-      const oldDarkTheme = document.head.querySelector('link[data-theme="dark"]');
-      if (oldDarkTheme) {
-        document.head.removeChild(oldDarkTheme);
-      }
-
-      // Add dark theme if needed
-      if (isDarkMode) {
-        const darkThemeCSS = document.createElement('link');
-        darkThemeCSS.href = 'https://cdn.jsdelivr.net/npm/@forevolve/bootstrap-dark@1.0.0/dist/css/bootstrap-dark.min.css';
-        darkThemeCSS.rel = 'stylesheet';
-        darkThemeCSS.setAttribute('data-theme', 'dark');
-        document.head.appendChild(darkThemeCSS);
-      }
-    };
-
-    // Initial theme setup
-    updateTheme();
-
-    // Watch for theme changes
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          updateTheme();
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
 
     // Listen for game session ready event
     const handleSessionReady = async (event) => {
@@ -77,8 +142,18 @@ function ParamsPanelReact({ gameType, gameId }) {
       
       if (schema?.properties) {
         for (const [key, prop] of Object.entries(schema.properties)) {
+          if (!uiSchema[key]) {
+            uiSchema[key] = {};
+          }
+          // Force descriptions to appear after the field
+          uiSchema[key]['ui:description'] = prop.description;
+          delete prop.description;
+          
           if (prop._ui_schema) {
-            uiSchema[key] = prop._ui_schema;
+            uiSchema[key] = {
+              ...uiSchema[key],
+              ...prop._ui_schema
+            };
             delete prop._ui_schema;
           }
         }
@@ -107,14 +182,27 @@ function ParamsPanelReact({ gameType, gameId }) {
   }
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-      <h2 className="text-xl font-bold mb-4">Parameters</h2>
+    <div className="bg-gray-800/80 p-8 rounded-2xl">
+      <h2 className="text-2xl font-bold text-gray-200 mb-8">Parameters</h2>
       <div className="w-full">
         <style>
           {`
             #root__title, 
             #root__description {
               display: none;
+            }
+            #root {
+              display: flex;
+              flex-direction: column;
+              gap: 24px;
+            }
+            .field-description {
+              font-size: 0.875rem;  /* text-sm equivalent */
+              color: rgb(75 85 99);  /* text-gray-600 equivalent */
+              margin-bottom: 0.25rem;
+            }
+            :root.dark .field-description {
+              color: rgb(156 163 175);  /* text-gray-400 equivalent */
             }
           `}
         </style>
@@ -123,12 +211,23 @@ function ParamsPanelReact({ gameType, gameId }) {
           uiSchema={schema.uiSchema}
           validator={validator}
           disabled={!sessionId}
+          className="flex flex-col gap-6"
           onSubmit={async ({ formData }, originalEvent) => {
-            originalEvent.preventDefault();
             if (!sessionId) return;
             await api.updateParams(sessionId, formData);
           }}
-        />
+        >
+          <button 
+            type="submit" 
+            className="mt-6 px-8 py-3 bg-blue-600 hover:bg-blue-700 
+                     text-white font-semibold rounded-full
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     transition-colors duration-200"
+            disabled={!sessionId}
+          >
+            Submit
+          </button>
+        </Form>
       </div>
     </div>
   );
