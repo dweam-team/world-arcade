@@ -74,6 +74,11 @@ class GameInfo(StrictModel):
         return load_game_implementation(self._metadata.entrypoint)
 
 
+class GameInfoWithMetadata(GameInfo):
+    """Game info with metadata"""
+    repo_link: str | None = None
+
+
 class PackageMetadata(StrictModel):
     """Metadata for a game package"""
     type: str

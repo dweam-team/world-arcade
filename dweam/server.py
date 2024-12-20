@@ -6,7 +6,7 @@ import pathlib
 import sys
 import uuid
 import yaml
-from dweam.models import GameInfo, GitBranchSource, ParamsUpdate, PathSource, StatusResponse
+from dweam.models import GameInfo, GameInfoWithMetadata, GitBranchSource, ParamsUpdate, PathSource, StatusResponse
 from dweam.utils.turn import create_turn_credentials, get_turn_stun_urls
 from pydantic import ValidationError
 from typing_extensions import assert_never
@@ -89,12 +89,19 @@ async def get_games_by_type(type: str) -> list[GameInfo]:
 
 # Endpoint to serve a singular game based on query parameter
 @app.get('/game_info/{type}/{id}')
-async def get_game(type: str, id: str) -> GameInfo:
+async def get_game(type: str, id: str) -> GameInfoWithMetadata:
     if type not in games:
         raise HTTPException(status_code=404, detail="Game type not found")
     if id not in games[type]:
         raise HTTPException(status_code=404, detail="Game not found")
-    return games[type][id]
+    game_info = games[type][id]
+    if game_info._metadata is None:
+        raise HTTPException(status_code=404, detail="Game metadata not found")
+    game_info_with_metadata = GameInfoWithMetadata(
+        **game_info.model_dump(),
+        repo_link=game_info._metadata.repo_link,
+    )
+    return game_info_with_metadata
 
 async def cleanup_worker(session_id: str, log: BoundLogger) -> None:
     """Clean up a game worker and its resources"""
