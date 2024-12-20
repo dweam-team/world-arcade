@@ -119,7 +119,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 [
                     str(pip_path), 
                     "install",
-                    "--force-reinstall", 
+                    # "--force-reinstall", 
                     "-e",
                     str(abs_path),
                     "--extra-index-url",
@@ -139,7 +139,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 [
                     str(pip_path), 
                     "install", 
-                    "--force-reinstall", 
+                    # "--force-reinstall", 
                     git_url,
                     "--extra-index-url",
                     "https://download.pytorch.org/whl/cu121",
@@ -157,7 +157,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                     [
                         str(pip_path), 
                         "install", 
-                        "--force-reinstall", 
+                        # "--force-reinstall", 
                         f"{name}=={source.version}",
                         "--extra-index-url",
                         "https://download.pytorch.org/whl/cu121",
