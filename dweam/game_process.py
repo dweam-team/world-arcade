@@ -247,6 +247,7 @@ async def main():
                     should_exit = True
                 
             except Exception as e:
+                log.exception("Error processing command", command_type=type(command))
                 response = ErrorResponse(error=str(e))
                 
             writer.write(response.model_dump_json().encode() + b"\n")
