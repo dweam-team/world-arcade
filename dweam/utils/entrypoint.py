@@ -39,6 +39,15 @@ DEFAULT_SOURCE_CONFIG = SourceConfig(
                 markers="platform_system != 'Windows'",  # JAX does not support GPU on Windows
             ),
         ],
+        "diamond_mariokart": [
+            PathSource(
+                path=Path("AI-MarioKart64"),
+            ),
+            GitBranchSource(
+                git="https://github.com/dweam-team/AI-MarioKart64",
+                branch="main",
+            ),
+        ],
         "diamond_csgo": [
             PathSource(
                 path=Path("diamond-csgo"),
