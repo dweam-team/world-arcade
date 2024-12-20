@@ -4,11 +4,16 @@ import { useEffect, useState } from 'react';
 import { paramsSchema } from '~/stores/gameStore';
 import { useStore } from '@nanostores/react';
 import { api } from '~/lib/api';
-function ParamsForm({ gameType, gameId }) {
+
+function ParamsPanelReact({ gameType, gameId }) {
   const [isClient, setIsClient] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [isDark, setIsDark] = useState(false);
   const schema = useStore(paramsSchema);
+
+  const hasParameters = () => {
+    return schema?.schema?.properties && Object.keys(schema.schema.properties).length > 0;
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -72,10 +77,9 @@ function ParamsForm({ gameType, gameId }) {
       
       if (schema?.properties) {
         for (const [key, prop] of Object.entries(schema.properties)) {
-          // UI Schema is stored directly in _ui_schema
           if (prop._ui_schema) {
             uiSchema[key] = prop._ui_schema;
-            delete prop._ui_schema;  // Clean up schema
+            delete prop._ui_schema;
           }
         }
       }
@@ -98,34 +102,36 @@ function ParamsForm({ gameType, gameId }) {
     };
   }, []);
 
-  if (!isClient || !schema) {
+  if (!isClient || !schema || !hasParameters()) {
     return null;
   }
 
   return (
-    <>
-      <style>
-        {`
-          #root__title, 
-          #root__description {
-            display: none;
-          }
-        `}
-      </style>
-      <Form
-        schema={schema.schema}
-        uiSchema={schema.uiSchema}
-        validator={validator}
-        disabled={!sessionId}
-        onSubmit={async ({ formData }, originalEvent) => {
-          originalEvent.preventDefault();
-          if (!sessionId) return;
-
-          await api.updateParams(sessionId, formData);
-        }}
-      />
-    </>
+    <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+      <h2 className="text-xl font-bold mb-4">Parameters</h2>
+      <div className="w-full">
+        <style>
+          {`
+            #root__title, 
+            #root__description {
+              display: none;
+            }
+          `}
+        </style>
+        <Form
+          schema={schema.schema}
+          uiSchema={schema.uiSchema}
+          validator={validator}
+          disabled={!sessionId}
+          onSubmit={async ({ formData }, originalEvent) => {
+            originalEvent.preventDefault();
+            if (!sessionId) return;
+            await api.updateParams(sessionId, formData);
+          }}
+        />
+      </div>
+    </div>
   );
 }
 
-export default ParamsForm; 
+export default ParamsPanelReact; 

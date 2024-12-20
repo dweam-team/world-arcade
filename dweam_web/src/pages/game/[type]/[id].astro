@@ -2,7 +2,7 @@
 import Layout from '~/layouts/PageLayout.astro';
 import Header from '~/components/widgets/Header.astro';
 import GameView from '~/components/dweam/GameViewReact';
-import ParamsPanel from '~/components/dweam/ParamsPanel.astro';
+import ParamsPanel from '~/components/dweam/ParamsPanelReact';
 import { api } from '~/lib/api';
 
 const metadata = {
@@ -57,7 +57,7 @@ try {
           </div>
         ) : null}
         <div id="params-section" class="w-80 mt-4">
-          {gameData ? <ParamsPanel gameType={type} gameId={id} /> : null}
+          {gameData ? <ParamsPanel client:load gameType={type} gameId={id} /> : null}
         </div>
       </div>
       <div id="game-view" class={`flex-grow sticky top-[150px] ${gameData && gameData.buttons ? '' : 'hidden'}`} style="height: fit-content;">
