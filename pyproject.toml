@@ -19,6 +19,7 @@ structlog = "^24.4.0"
 pywebview = { version = "^4.4.1", optional = true }
 requests = "^2.32.3"
 tomli = { version = "^2.2.1", python = "<3.11" }
+packaging = "^24.2"
 
 [tool.poetry.extras]
 local = ["pywebview"]  # Dependencies needed for local desktop app

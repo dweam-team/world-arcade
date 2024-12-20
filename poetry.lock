@@ -1006,7 +1006,7 @@ files = [
 name = "packaging"
 version = "24.2"
 description = "Core utilities for Python packages"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "packaging-24.2-py3-none-any.whl", hash = "sha256:09abb1bccd265c01f4a3aa3f7a7db064b36514d2cba19a2f694fe6150451a759"},
@@ -1877,4 +1877,4 @@ local = ["pywebview"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "607c664962afcb17997ed5adc3ff6f1a9df39c21ebae2a051764454e77a0e174"
+content-hash = "00df111cf995106189ebcb7538e026d92fa97015602dd0dac8e8bf9429368a7f"

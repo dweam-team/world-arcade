@@ -17,6 +17,7 @@ from structlog.stdlib import BoundLogger
 import importlib.util
 from typing import BinaryIO
 import shutil
+from packaging import markers as pkg_markers
 
 from dweam.models import (
     PackageMetadata, GameInfo, GameSource,
@@ -35,6 +36,7 @@ DEFAULT_SOURCE_CONFIG = SourceConfig(
             GitBranchSource(
                 git="https://github.com/dweam-team/lucid-v1",
                 branch="master",
+                markers="platform_system != 'Windows'",  # JAX does not support GPU on Windows
             ),
         ],
         "diamond_csgo": [
@@ -72,8 +74,21 @@ def get_pip_path(venv_path: Path) -> Path:
     return venv_path / "Scripts" / "pip.exe" if sys.platform == "win32" else venv_path / "bin" / "pip"
 
 
+def evaluate_markers(markers: str | None) -> bool:
+    """Evaluate environment markers like 'platform_system != "Windows"'"""
+    if not markers:
+        return True
+    
+    marker = pkg_markers.Marker(markers)
+    return marker.evaluate()
+
+
 def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, name: str) -> Path | None:
     """Install a game from its source into the given venv and return the module path"""
+    if not evaluate_markers(source.markers):
+        log.info("Skipping installation due to environment markers", markers=source.markers)
+        return None
+
     pip_path = get_pip_path(venv_path)
     
     if not pip_path.exists():

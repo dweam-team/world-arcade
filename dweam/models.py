@@ -17,7 +17,10 @@ def Field(*args, ui_schema: dict | None = None, **kwargs):
 
 class BaseSource(StrictModel):
     """Base class for all dependency sources"""
-    pass
+    markers: str | None = Field(
+        default=None, 
+        description="Environment markers (e.g. 'platform_system != \"Windows\"')"
+    )
     # FIXME support nonstandard metadata locations?
     # metadata: Path = Field(default=Path("dweam.toml"), description="Path to the package's game metadata file")
 
