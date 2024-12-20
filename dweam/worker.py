@@ -68,6 +68,21 @@ class GameWorker:
                 output_line = line.decode('utf-8', errors='replace').rstrip()
             self.log.info(f"Worker {stream_name}:", line=output_line)
 
+    async def _collect_process_output(self, process: Process) -> tuple[str, str]:
+        if process.stdout:
+            stdout_data = await process.stdout.read()
+            stdout_str = stdout_data.decode() if stdout_data else None
+        else:
+            stdout_str = None
+
+        if process.stderr:
+            stderr_data = await process.stderr.read()
+            stderr_str = stderr_data.decode() if stderr_data else None
+        else:
+            stderr_str = None
+
+        return stdout_str, stderr_str
+
     async def start(self):
         """Start the worker process and establish communication"""
         if sys.platform == "win32":
@@ -122,6 +137,17 @@ class GameWorker:
         )
         self.log.info("Started worker process", pid=self.process.pid)
 
+        # Add immediate process status check
+        if self.process.returncode is not None:
+            stderr, stdout = await self._collect_process_output(self.process)
+            self.log.error(
+                "Process failed to start", 
+                returncode=self.process.returncode,
+                stdout=stdout,
+                stderr=stderr
+            )
+            raise RuntimeError(f"Process failed to start with return code {self.process.returncode}")
+
         # Try to connect with timeout
         try:
             # Start serving (but don't block)
@@ -129,26 +155,35 @@ class GameWorker:
                 server_task = asyncio.create_task(server.serve_forever())
                 
                 try:
-                    await asyncio.wait_for(client_connected.wait(), timeout=5)
+                    # Wait for either client connection or process termination
+                    done, pending = await asyncio.wait([
+                        asyncio.create_task(client_connected.wait()),
+                        asyncio.create_task(self.process.wait())
+                    ], timeout=5, return_when=asyncio.FIRST_COMPLETED)
+
+                    # If process completed first, it means it crashed
+                    if self.process.returncode is not None:
+                        stdout_str, stderr_str = await self._collect_process_output(self.process)
+                        self.log.error(
+                            "Process terminated before connection",
+                            returncode=self.process.returncode,
+                            stderr=stderr_str,
+                            stdout=stdout_str
+                        )
+                        raise RuntimeError(f"Process terminated with return code {self.process.returncode}")
+
+                    # If we get here and nothing completed, it was a timeout
+                    if not done:
+                        raise asyncio.TimeoutError("Worker process failed to connect")
                 except asyncio.TimeoutError:
                     # If timeout occurs, collect stderr/stdout before raising
-                    if self.process.stderr:
-                        stderr_data = await self.process.stderr.read()
-                        stderr_str = stderr_data.decode() if stderr_data else None
-                    else:
-                        stderr_str = None
-                        
-                    if self.process.stdout:
-                        stdout_data = await self.process.stdout.read()
-                        stdout_str = stdout_data.decode() if stdout_data else None
-                    else:
-                        stdout_str = None
+                    stdout_str, stderr_str = await self._collect_process_output(self.process)
                         
                     self.log.error(
                         "Worker failed to connect",
                         returncode=self.process.returncode,
+                        stdout=stdout_str,
                         stderr=stderr_str,
-                        stdout=stdout_str
                     )
                     raise TimeoutError("Worker process failed to connect")
                 finally:
