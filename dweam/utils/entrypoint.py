@@ -320,7 +320,7 @@ def load_game_implementation(entrypoint: str) -> type:
         module = importlib.import_module(module_path)
         return getattr(module, class_name)
     except Exception as e:
-        raise ImportError(f"Failed to load game implementation from {entrypoint}: {e}")
+        raise ImportError(f"Failed to load game implementation from {entrypoint}") from e
 
 
 def load_games(
