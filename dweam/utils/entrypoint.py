@@ -81,6 +81,8 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
         return None
 
     try:
+        # TODO check if same package is already installed (with the same dependencies)
+        # TODO install each one into its own venv
         # Install package based on source type
         if isinstance(source, PathSource):
             abs_path = source.path.absolute()
@@ -90,7 +92,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 
             log.info("Installing from local path", path=str(abs_path))
             result = subprocess.run(
-                [str(pip_path), "install", "--force-reinstall", "--no-deps", "-e", str(abs_path)],
+                [str(pip_path), "install", "--force-reinstall", "-e", str(abs_path)],
                 text=True
             )
             if result.returncode != 0:
@@ -102,7 +104,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             log.info("Installing from git", url=git_url)
             
             result = subprocess.run(
-                [str(pip_path), "install", "--force-reinstall", "--no-deps", git_url],
+                [str(pip_path), "install", "--force-reinstall", git_url],
                 text=True
             )
             if result.returncode != 0:
@@ -113,7 +115,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             log.info("Installing from PyPI", package=f"{name}=={source.version}")
             try:
                 subprocess.run(
-                    [str(pip_path), "install", "--force-reinstall", "--no-deps", f"{name}=={source.version}"],
+                    [str(pip_path), "install", "--force-reinstall", f"{name}=={source.version}"],
                     check=True,
                     text=True
                 )
