@@ -68,14 +68,16 @@ class GameWorker:
                 output_line = line.decode('utf-8', errors='replace').rstrip()
             self.log.info(f"Worker {stream_name}:", line=output_line)
 
-    async def _collect_process_output(self, process: Process) -> tuple[str, str]:
+    async def _collect_process_output(self, process: Process) -> tuple[str | None, str | None]:
         if process.stdout:
+            self.log.debug("Reading stdout")
             stdout_data = await process.stdout.read()
             stdout_str = stdout_data.decode() if stdout_data else None
         else:
             stdout_str = None
 
         if process.stderr:
+            self.log.debug("Reading stderr")
             stderr_data = await process.stderr.read()
             stderr_str = stderr_data.decode() if stderr_data else None
         else:
@@ -152,6 +154,7 @@ class GameWorker:
         try:
             # Start serving (but don't block)
             async with server:
+                self.log.debug("Starting server")
                 server_task = asyncio.create_task(server.serve_forever())
                 
                 try:
