@@ -39,19 +39,32 @@ try {
           <div class="flex gap-4">
             <div class="w-80 shrink-0">
               <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-                <h2 class="text-xl font-bold mb-4">Controls</h2>
-                <div class="space-y-2">
-                  {Object.entries(gameData.buttons).map(([action, key]) => (
-                    <div class="flex justify-between items-center">
-                      <span class="flex items-center">
-                        <span class="inline-block w-6 text-center">{action.split(' ')[0]}</span>
-                        <span class="ml-2">{action.split(' ').slice(1).join(' ')}</span>
-                      </span>
-                      <span class="font-mono">{key}</span>
-                    </div>
-                  ))}
+                <button
+                  id="toggle-controls"
+                  class="w-full text-left"
+                  aria-label="Toggle controls visibility"
+                >
+                  <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">Controls</h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform transition-transform text-gray-600 dark:text-gray-400" id="controls-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+                <div id="controls-wrapper" class="transition-all duration-300 overflow-hidden">
+                  <div id="controls-content" class="space-y-2 mt-4">
+                    {Object.entries(gameData.buttons).map(([action, key]) => (
+                      <div class="flex justify-between items-center">
+                        <span class="flex items-center">
+                          <span class="inline-block w-6 text-center">{action.split(' ')[0]}</span>
+                          <span class="ml-2">{action.split(' ').slice(1).join(' ')}</span>
+                        </span>
+                        <span class="font-mono">{key}</span>
+                      </div>
+                    ))}
+                    <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">Click on the game to play, press Escape to release the mouse.</p>
+                  </div>
                 </div>
-                <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">Click on the game to play, press Escape to release the mouse.</p>
               </div>
             </div>
           </div>
@@ -122,3 +135,29 @@ try {
     <!-- Error message will be inserted here -->
   </div>
 </Layout>
+
+<script>
+  const toggleButton = document.getElementById('toggle-controls');
+  const controlsWrapper = document.getElementById('controls-wrapper');
+  const controlsContent = document.getElementById('controls-content');
+  const chevron = document.getElementById('controls-chevron');
+  
+  if (toggleButton && controlsWrapper && controlsContent && chevron) {
+    // Add a larger buffer to the height calculation
+    controlsWrapper.style.maxHeight = (controlsContent.offsetHeight + 24) + 'px';
+    
+    toggleButton.addEventListener('click', () => {
+      const isExpanded = controlsWrapper.style.maxHeight !== '0px';
+      
+      if (isExpanded) {
+        controlsWrapper.style.maxHeight = '0px';
+        controlsWrapper.style.opacity = '0';
+        chevron.style.transform = 'rotate(-90deg)';
+      } else {
+        controlsWrapper.style.maxHeight = (controlsContent.offsetHeight + 24) + 'px';
+        controlsWrapper.style.opacity = '1';
+        chevron.style.transform = 'rotate(0)';
+      }
+    });
+  }
+</script>
