@@ -88,7 +88,7 @@ import pydantic
 
 
 def convert_gifs(force=False):
-    paths = glob.glob('dweam_web/public/thumbnails/*.gif')
+    paths = glob.glob('*.gif')
     for path in paths:
         webm_path = path.replace(".gif", ".webm")
         if os.path.exists(webm_path) and not force:
