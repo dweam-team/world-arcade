@@ -183,8 +183,7 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path):
     if result.returncode != 0:
         log.warning("dweam not installed, installing", stdout=result.stdout, stderr=result.stderr)
         # Use streaming output for installation
-        from dweam.utils.entrypoint import run_pip_with_output
-        returncode = run_pip_with_output([
+        returncode = run_pip_with_output(log, [
             str(pip_path),
             "install",
             "-e",
@@ -207,8 +206,7 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path):
     if not install_location or not Path(install_location).samefile(dweam_path):
         log.warning("dweam is not installed from the correct location, reinstalling", new_location=dweam_path, old_location=install_location)
         # Use streaming output for reinstallation
-        from dweam.utils.entrypoint import run_pip_with_output
-        returncode = run_pip_with_output([
+        returncode = run_pip_with_output(log, [
             str(pip_path),
             "install",
             "-e",
@@ -219,3 +217,63 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path):
             raise RuntimeError("Failed to reinstall dweam package")
     
     return True
+
+def run_pip_with_output(log: BoundLogger, args: list[str]) -> int:
+    """Run pip with real-time output logging"""
+    process = subprocess.Popen(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,  # Line buffered
+        universal_newlines=True
+    )
+    
+    if sys.platform == "win32":
+        # Windows implementation - read streams one at a time
+        while True:
+            # Read stdout
+            stdout_line = process.stdout.readline()
+            if stdout_line:
+                log.info("pip stdout", output=stdout_line.strip())
+                
+            # Read stderr
+            stderr_line = process.stderr.readline()
+            if stderr_line:
+                log.info("pip stderr", output=stderr_line.strip())
+                
+            # Check if process has finished and no more output
+            if process.poll() is not None and not stdout_line and not stderr_line:
+                break
+    else:
+        # Unix implementation - use select
+        import select
+        
+        while True:
+            reads = [process.stdout, process.stderr]
+            reads = [f for f in reads if f]  # Remove closed pipes
+            if not reads:
+                break
+                
+            ready, _, _ = select.select(reads, [], [], 0.1)
+            
+            for pipe in ready:
+                line = pipe.readline()
+                if line:
+                    if pipe is process.stdout:
+                        log.info("pip stdout", output=line.strip())
+                    else:
+                        log.info("pip stderr", output=line.strip())
+            
+            if process.poll() is not None:
+                # Read any remaining output
+                for pipe in [process.stdout, process.stderr]:
+                    if pipe:
+                        for line in pipe:
+                            if pipe is process.stdout:
+                                log.info("pip stdout", output=line.strip())
+                            else:
+                                log.info("pip stderr", output=line.strip())
+                break
+    
+    return process.wait()

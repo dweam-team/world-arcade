@@ -23,7 +23,7 @@ from dweam.models import (
     PackageMetadata, GameInfo, GameSource,
     GitBranchSource, PathSource, PyPISource, SourceConfig
 )
-from dweam.utils.venv import ensure_correct_dweam_version
+from dweam.utils.venv import ensure_correct_dweam_version, run_pip_with_output
 
 
 # Define default sources for each game
@@ -113,52 +113,6 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             "https://download.pytorch.org/whl/cu121",
         ]
 
-        def run_pip_with_output(args: list[str]) -> int:
-            process = subprocess.Popen(
-                args,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1,  # Line buffered
-                universal_newlines=True
-            )
-            
-            # Use select to read from both pipes without blocking
-            import select
-            
-            # Keep reading while process is alive and pipes are open
-            while True:
-                # Wait for data on either pipe (timeout 0.1s)
-                reads = [process.stdout, process.stderr]
-                reads = [f for f in reads if f]  # Remove closed pipes
-                if not reads:
-                    break
-                    
-                ready, _, _ = select.select(reads, [], [], 0.1)
-                
-                # Read from any ready pipe
-                for pipe in ready:
-                    line = pipe.readline()
-                    if line:
-                        if pipe is process.stdout:
-                            log.info("pip stdout", output=line.strip())
-                        else:
-                            log.info("pip stderr", output=line.strip())
-                
-                # Check if process has finished
-                if process.poll() is not None:
-                    # Read any remaining output
-                    for pipe in [process.stdout, process.stderr]:
-                        if pipe:
-                            for line in pipe:
-                                if pipe is process.stdout:
-                                    log.info("pip stdout", output=line.strip())
-                                else:
-                                    log.info("pip stderr", output=line.strip())
-                    break
-            
-            return process.wait()
-
         # Install package based on source type
         if isinstance(source, PathSource):
             abs_path = source.path.absolute()
@@ -167,7 +121,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 return None
                 
             log.info("Installing from local path", path=str(abs_path))
-            returncode = run_pip_with_output([*pip_base_args, "-e", str(abs_path)])
+            returncode = run_pip_with_output(log, [*pip_base_args, "-e", str(abs_path)])
             if returncode != 0:
                 log.error("Failed to install from local path")
                 return None
@@ -176,7 +130,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             git_url = f"git+{source.git}@{source.branch}#egg={name}"
             log.info("Installing from git", url=git_url)
             
-            returncode = run_pip_with_output([*pip_base_args, git_url])
+            returncode = run_pip_with_output(log, [*pip_base_args, git_url])
             if returncode != 0:
                 log.error("Failed to install from git")
                 return None
@@ -185,7 +139,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             package_spec = f"{name}=={source.version}"
             log.info("Installing from PyPI", package=package_spec)
             
-            returncode = run_pip_with_output([*pip_base_args, package_spec])
+            returncode = run_pip_with_output(log, [*pip_base_args, package_spec])
             if returncode != 0:
                 log.error("Failed to install from PyPI")
                 return None
