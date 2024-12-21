@@ -173,7 +173,6 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path):
             import inspect
             dweam_path = Path(inspect.getsourcefile(dweam)).parent.parent
 
-
     # Get installed version using pip show
     result = subprocess.run(
         [str(pip_path), "show", "dweam"],
@@ -183,11 +182,15 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path):
     
     if result.returncode != 0:
         log.warning("dweam not installed, installing", stdout=result.stdout, stderr=result.stderr)
-        result = subprocess.run(
-            [str(pip_path), "install", "-e", str(dweam_path)],
-            text=True
-        )
-        if result.returncode != 0:
+        # Use streaming output for installation
+        from dweam.utils.entrypoint import run_pip_with_output
+        returncode = run_pip_with_output([
+            str(pip_path),
+            "install",
+            "-e",
+            str(dweam_path)
+        ])
+        if returncode != 0:
             log.error("Failed to install dweam")
             return
         return
@@ -203,11 +206,15 @@ def ensure_correct_dweam_version(log: BoundLogger, pip_path: Path):
     # TODO this wrongly detects incorrect install methinks
     if not install_location or not Path(install_location).samefile(dweam_path):
         log.warning("dweam is not installed from the correct location, reinstalling", new_location=dweam_path, old_location=install_location)
-        result = subprocess.run(
-            [str(pip_path), "install", "-e", str(dweam_path)],
-            text=True
-        )
-        if result.returncode != 0:
+        # Use streaming output for reinstallation
+        from dweam.utils.entrypoint import run_pip_with_output
+        returncode = run_pip_with_output([
+            str(pip_path),
+            "install",
+            "-e",
+            str(dweam_path)
+        ])
+        if returncode != 0:
             log.error("Failed to reinstall dweam")
             raise RuntimeError("Failed to reinstall dweam package")
     

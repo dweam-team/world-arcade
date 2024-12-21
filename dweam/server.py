@@ -43,18 +43,25 @@ def _load_games():
     
     # Store last log message on the thread object
     game_loading_thread = threading.current_thread()
-    game_loading_thread.last_log_line = None
+    game_loading_thread.last_log_line = {'message': '', 'detail': ''}  # Initialize with empty strings
     
     # Create a log handler that updates the thread's last_log_line
     class ThreadLogHandler:
         def __call__(self, logger, name, event_dict):
-            # Format the log message with context
+            # Special handling for pip output
+            if event_dict.get('event') in ('pip stdout', 'pip stderr'):
+                message = event_dict.get('output', '')
+                if message:  # Only update if there's actual output
+                    game_loading_thread.last_log_line['detail'] = message
+                return event_dict
+            
+            # Format other log messages with context
             message = event_dict.get('event', '')
             if 'msg' in event_dict:
                 message = f"{message}: {event_dict['msg']}"
             
             # Add relevant context from the event dict
-            context_keys = ['path', 'name', 'package', 'url']  # Add any other relevant keys
+            context_keys = ['path', 'name', 'package', 'url', 'output']
             context = []
             for key in context_keys:
                 if key in event_dict:
@@ -63,7 +70,9 @@ def _load_games():
             if context:
                 message = f"{message} ({', '.join(context)})"
             
-            game_loading_thread.last_log_line = message
+            # New main message - clear the detail
+            game_loading_thread.last_log_line['message'] = message
+            game_loading_thread.last_log_line['detail'] = ''
             return event_dict
     
     # Configure structlog to use our processor for this thread
@@ -114,11 +123,16 @@ active_workers: dict[str, GameWorker] = {}
 @app.get('/status')
 async def status() -> StatusResponse:
     message = None
+    detail = None
     if is_loading and game_loading_thread and hasattr(game_loading_thread, 'last_log_line'):
-        message = game_loading_thread.last_log_line
+        log_line = game_loading_thread.last_log_line
+        if isinstance(log_line, dict):
+            message = log_line.get('message')
+            detail = log_line.get('detail')
     response = StatusResponse(
         is_loading=is_loading,
-        loading_message=message
+        loading_message=message,
+        loading_detail=detail
     )
     print(f"Status response: {response}")
     return response

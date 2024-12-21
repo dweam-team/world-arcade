@@ -104,6 +104,7 @@ class ParamsUpdate(BaseModel):
 class StatusResponse(BaseModel):
     is_loading: bool
     loading_message: str | None = None
+    loading_detail: str | None = None
 
 
 if __name__ == "__main__":

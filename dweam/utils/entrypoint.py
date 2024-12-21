@@ -105,8 +105,60 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
         return None
 
     try:
-        # TODO check if same package is already installed (with the same dependencies)
-        # TODO install each one into its own venv
+        # Common pip install args
+        pip_base_args = [
+            str(pip_path),
+            "install",
+            "--extra-index-url",
+            "https://download.pytorch.org/whl/cu121",
+        ]
+
+        def run_pip_with_output(args: list[str]) -> int:
+            process = subprocess.Popen(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,  # Line buffered
+                universal_newlines=True
+            )
+            
+            # Use select to read from both pipes without blocking
+            import select
+            
+            # Keep reading while process is alive and pipes are open
+            while True:
+                # Wait for data on either pipe (timeout 0.1s)
+                reads = [process.stdout, process.stderr]
+                reads = [f for f in reads if f]  # Remove closed pipes
+                if not reads:
+                    break
+                    
+                ready, _, _ = select.select(reads, [], [], 0.1)
+                
+                # Read from any ready pipe
+                for pipe in ready:
+                    line = pipe.readline()
+                    if line:
+                        if pipe is process.stdout:
+                            log.info("pip stdout", output=line.strip())
+                        else:
+                            log.info("pip stderr", output=line.strip())
+                
+                # Check if process has finished
+                if process.poll() is not None:
+                    # Read any remaining output
+                    for pipe in [process.stdout, process.stderr]:
+                        if pipe:
+                            for line in pipe:
+                                if pipe is process.stdout:
+                                    log.info("pip stdout", output=line.strip())
+                                else:
+                                    log.info("pip stderr", output=line.strip())
+                    break
+            
+            return process.wait()
+
         # Install package based on source type
         if isinstance(source, PathSource):
             abs_path = source.path.absolute()
@@ -115,19 +167,8 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
                 return None
                 
             log.info("Installing from local path", path=str(abs_path))
-            result = subprocess.run(
-                [
-                    str(pip_path), 
-                    "install",
-                    # "--force-reinstall", 
-                    "-e",
-                    str(abs_path),
-                    "--extra-index-url",
-                    "https://download.pytorch.org/whl/cu121",
-                ],
-                text=True
-            )
-            if result.returncode != 0:
+            returncode = run_pip_with_output([*pip_base_args, "-e", str(abs_path)])
+            if returncode != 0:
                 log.error("Failed to install from local path")
                 return None
             
@@ -135,48 +176,25 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
             git_url = f"git+{source.git}@{source.branch}#egg={name}"
             log.info("Installing from git", url=git_url)
             
-            result = subprocess.run(
-                [
-                    str(pip_path), 
-                    "install", 
-                    # "--force-reinstall", 
-                    git_url,
-                    "--extra-index-url",
-                    "https://download.pytorch.org/whl/cu121",
-                ],
-                text=True
-            )
-            if result.returncode != 0:
-                log.error("Failed to install from git", stdout=result.stdout, stderr=result.stderr)
+            returncode = run_pip_with_output([*pip_base_args, git_url])
+            if returncode != 0:
+                log.error("Failed to install from git")
                 return None
             
         elif isinstance(source, PyPISource):
-            log.info("Installing from PyPI", package=f"{name}=={source.version}")
-            try:
-                subprocess.run(
-                    [
-                        str(pip_path), 
-                        "install", 
-                        # "--force-reinstall", 
-                        f"{name}=={source.version}",
-                        "--extra-index-url",
-                        "https://download.pytorch.org/whl/cu121",
-                    ],
-                    check=True,
-                    text=True
-                )
-            except subprocess.CalledProcessError as e:
-                log.error(
-                    "Failed to install from PyPi",
-                    returncode=e.returncode
-                )
+            package_spec = f"{name}=={source.version}"
+            log.info("Installing from PyPI", package=package_spec)
+            
+            returncode = run_pip_with_output([*pip_base_args, package_spec])
+            if returncode != 0:
+                log.error("Failed to install from PyPI")
                 return None
             
         else:
             assert_never(source)
             return None
 
-        # Get the installed package location from pip show
+        # Get the installed package location
         result = subprocess.run(
             [str(pip_path), "show", name],
             capture_output=True,
