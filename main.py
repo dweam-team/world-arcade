@@ -51,15 +51,20 @@ def setup_logging():
     
     return log_file
 
+def is_debug_build() -> bool:
+    """Detect if we're running the debug build based on console window presence"""
+    if hasattr(sys, '_MEIPASS'):
+        # Check if we have a console window already attached
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+        return kernel32.GetConsoleWindow() != 0  # True if console exists (debug build)
+    return True  # In development environment, always use debug mode
+
 def create_debug_console():
     """Create a separate console window for debug output on Windows"""
     if sys.platform == 'win32':
         try:
             kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
             user32 = ctypes.WinDLL('user32', use_last_error=True)
-            
-            # Allocate console
-            kernel32.AllocConsole()
             
             # Set console title
             user32.SetWindowTextW(kernel32.GetConsoleWindow(), "Dweam Debug Console")
@@ -323,6 +328,12 @@ def main():
     print("Both servers are ready!")
     sys.stdout.flush()
     
+    # Get debug mode based on build type
+    debug_mode = is_debug_build()
+    logger.info(f"Running in {'debug' if debug_mode else 'release'} mode")
+    print(f"Running in {'debug' if debug_mode else 'release'} mode")
+    sys.stdout.flush()
+    
     # Create a window with webview instead of opening browser
     logger.info(f"Opening webview window at {frontend_url}")
     
@@ -341,8 +352,8 @@ def main():
         height=1000,
         resizable=True,
     )
-    # Start webview and wait for it to close
-    webview.start(debug=True)
+    # Start webview with debug mode only in debug builds
+    webview.start(debug=debug_mode)
     
     # Clean up when window closes
     logger.info("Cleaning up processes...")

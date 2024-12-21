@@ -138,6 +138,7 @@ jobs:
       run: |
         echo Building debug version...
         poetry run pyinstaller main.py --name dweam-debug ^
+          --console ^
           --add-data "dweam_web\dist\server;frontend\server" ^
           --add-data "dweam_web\dist\client;frontend\client" ^
           --add-binary "node.exe;." ^
@@ -178,6 +179,7 @@ jobs:
       run: |
         echo Building release version...
         poetry run pyinstaller main.py --name dweam ^
+          --noconsole ^
           --onefile ^
           --add-data "dweam_web\dist\server;frontend\server" ^
           --add-data "dweam_web\dist\client;frontend\client" ^
