@@ -28,6 +28,7 @@ from dweam.utils.entrypoint import load_games, get_cache_dir
 from dweam.worker import GameWorker
 from contextlib import asynccontextmanager
 from dweam.utils.venv import get_venv_path
+from sse_starlette.sse import EventSourceResponse
 
 log = get_logger()
 is_loading = True
@@ -132,29 +133,65 @@ async def offer(
     session_id = str(uuid.uuid4())[:8]
     log = log.bind(session_id=session_id)
 
-    # Create and start game worker
-    worker = GameWorker(
-        log=log,
-        game_info=game_info,
-        session_id=session_id,
-        game_type=type,
-        game_id=id,
-        venv_path=get_venv_path(log)
-    )
-    active_workers[session_id] = worker
-    
-    try:
-        answer = await worker.run(offer)
-    except Exception as e:
-        log.exception("Error starting game worker")
-        await cleanup_worker(session_id, log)
-        raise HTTPException(status_code=500, detail=str(e))
+    async def event_generator():
+        # Create and start game worker
+        worker = GameWorker(
+            log=log,
+            game_info=game_info,
+            session_id=session_id,
+            game_type=type,
+            game_id=id,
+            venv_path=get_venv_path(log)
+        )
+        active_workers[session_id] = worker
+        
+        # Start worker.run in a separate task
+        run_task = asyncio.create_task(worker.run(offer))
+        last_message = None
 
-    return JSONResponse(content={
-        "sdp": answer.sdp,
-        "type": answer.type,
-        "sessionId": session_id
-    })
+        try:
+            # Stream logs while waiting for run_task to complete
+            while not run_task.done():
+                if worker.last_log_line != last_message:
+                    last_message = worker.last_log_line
+                    if last_message:
+                        yield {
+                            "event": "loading",
+                            "data": last_message
+                        }
+                await asyncio.sleep(0.1)
+
+            # Get and send the answer
+            answer = await run_task
+            yield {
+                "event": "answer",
+                "data": json.dumps({
+                    "sdp": answer.sdp,
+                    "type": answer.type,
+                    "sessionId": session_id
+                })
+            }
+
+            # Keep streaming logs until client disconnects
+            while True:
+                if worker.last_log_line != last_message:
+                    last_message = worker.last_log_line
+                    if last_message:
+                        yield {
+                            "event": "loading",
+                            "data": last_message
+                        }
+                await asyncio.sleep(0.1)
+
+        except Exception as e:
+            log.exception("Error starting game worker")
+            await cleanup_worker(session_id, log)
+            yield {
+                "event": "error",
+                "data": str(e)
+            }
+
+    return EventSourceResponse(event_generator())
 
 @app.get("/health")
 async def health_check():

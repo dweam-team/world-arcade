@@ -11,10 +11,12 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
   const playOverlayRef = useRef<HTMLDivElement>(null);
   const [isPointerLocked, setIsPointerLocked] = useState(false);
   const [connectionState, setConnectionState] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
-  
+  const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const heartbeatIntervalRef = useRef<number | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const cleanup = () => {
     if (heartbeatIntervalRef.current) {
@@ -44,6 +46,11 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
     setConnectionState('disconnected');
     window.dispatchEvent(new CustomEvent('gameSessionEnd'));
     console.log('Cleanup completed');
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
   };
 
   useEffect(() => {
@@ -133,6 +140,9 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
     
     setConnectionState('connecting');
 
+    // Create new AbortController for this connection
+    abortControllerRef.current = new AbortController();
+
     let iceServers: RTCIceServer[] = [];
     
     const turnCredentials = await api.getTurnCredentials();
@@ -182,6 +192,11 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
         videoRef.current.onloadeddata = () => {
           console.log('First frame received, video ready to play');
           setConnectionState('connected');
+          
+          // Close the SSE connection by aborting the fetch
+          if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+          }
         };
       } else {
         console.error('No streams found in the track event.');
@@ -207,20 +222,27 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
     await pc.setLocalDescription(offer);
 
     try {
-      const response = await api.createOffer(gameType, gameId, {
-        sdp: pc.localDescription!.sdp,
-        type: pc.localDescription!.type
-      });
+      const response = await api.createOffer(
+        gameType,
+        gameId,
+        {
+          sdp: pc.localDescription!.sdp,
+          type: pc.localDescription!.type
+        },
+        setLoadingMessage,
+        abortControllerRef.current.signal  // Pass the signal
+      );
 
-      const answer = response;
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      await pc.setRemoteDescription(new RTCSessionDescription(response));
       
       window.dispatchEvent(new CustomEvent('gameSessionReady', {
-        detail: { sessionId: answer.sessionId }
+        detail: { sessionId: response.sessionId }
       }));
     } catch (error) {
-      console.error('Connection failed:', error);
-      cleanup();
+      if (error.name !== 'AbortError') {  // Don't show error for normal aborts
+        console.error('Connection failed:', error);
+        cleanup();
+      }
     }
   };
 
@@ -238,11 +260,18 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
           <div 
             ref={playOverlayRef}
             className="absolute top-0 left-0 w-full h-full bg-black/50 text-white 
-              flex items-center justify-center cursor-pointer text-5xl"
+              flex flex-col items-center justify-center cursor-pointer text-5xl"
             onClick={() => startPlayback()}
           >
             {connectionState === 'connecting' ? (
-              <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+              <>
+                <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4" />
+                {loadingMessage && (
+                  <div className="text-sm font-mono opacity-75 max-w-md text-center px-4">
+                    {loadingMessage}
+                  </div>
+                )}
+              </>
             ) : (
               '▶'
             )}

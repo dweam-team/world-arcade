@@ -1,3 +1,5 @@
+import { createParser, type EventSourceMessage } from 'eventsource-parser';
+
 const getBaseUrl = () => {
   // In SSR context, use the environment variable
   if (typeof window === 'undefined') {
@@ -101,10 +103,73 @@ class ApiClient {
     }>('/turn-credentials');
   }
 
-  async createOffer(gameType: string, gameId: string, data: any) {
-    return this.request<{ sessionId: string }>(`/offer/${gameType}/${gameId}`, {
+  async createOffer(
+    gameType: string, 
+    gameId: string, 
+    data: any,
+    onLoadingMessage?: (message: string) => void,
+    signal?: AbortSignal
+  ): Promise<RTCSessionDescriptionInit & { sessionId: string }> {
+    const url = `${this.getBaseUrl()}/offer/${gameType}/${gameId}`;
+    
+    const response = await fetch(url, {
       method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(data),
+      signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+
+    return new Promise((resolve, reject) => {
+      const parser = createParser({
+        onEvent: (event: EventSourceMessage) => {
+          if (event.event === 'error') {
+            reject(new Error(event.data));
+          }
+          else if (event.event === 'loading') {
+            onLoadingMessage?.(event.data.trim());
+          }
+          else if (event.event === 'answer') {
+            try {
+              const parsed = JSON.parse(event.data);
+              resolve({
+                sdp: parsed.sdp,
+                type: parsed.type,
+                sessionId: parsed.sessionId
+              });
+            } catch (e) {
+              console.error('Failed to parse answer:', e);
+              console.error('Raw data:', event.data);
+              reject(e);
+            }
+          }
+        }
+      });
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+
+      const processChunk = async () => {
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            parser.feed(chunk);
+          }
+        } catch (e) {
+          reject(e);
+        }
+      };
+
+      processChunk().catch(reject);
     });
   }
 

@@ -50,6 +50,8 @@ class GameWorker:
         # WebRTC
         self.pc: Optional[RTCPeerConnection] = None
 
+        self.last_log_line: str | None = None
+
     async def _monitor_process_output(self, stream: StreamReader | None, stream_name: str):
         """Monitor output stream of the worker process and log any output"""
         if stream is None:
@@ -66,7 +68,12 @@ class GameWorker:
             except UnicodeDecodeError:
                 # Fall back to a more lenient encoding that replaces invalid characters
                 output_line = line.decode('utf-8', errors='replace').rstrip()
-            self.log.info(f"Worker {stream_name}:", line=output_line)
+            
+            # Store the last non-empty line
+            if output_line.strip():
+                self.last_log_line = output_line
+                
+            self.log.info(f"Worker {stream_name}", line=output_line)
 
     async def _collect_process_output(self, process: Process) -> tuple[str | None, str | None]:
         stdout_str = None

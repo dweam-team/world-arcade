@@ -41,6 +41,7 @@
     "astro": "^5.0.1",
     "astro-embed": "^0.7.4",
     "astro-icon": "^1.1.4",
+    "eventsource-parser": "^3.0.0",
     "limax": "4.1.0",
     "lodash.merge": "^4.6.2",
     "nanostores": "^0.11.3",
