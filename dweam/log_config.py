@@ -65,7 +65,7 @@ def configure_logging(pretty=True, additional_processors=None, level=None):
     logging.getLogger("botocore").setLevel(library_log_level)
     logging.getLogger("aiobotocore").setLevel(library_log_level)
     logging.getLogger("aiortc").setLevel(library_log_level)
-    logging.getLogger("jax").setLevel(library_log_level)
+    # logging.getLogger("jax").setLevel(library_log_level)
     logging.getLogger("aioice").setLevel(library_log_level)
 
     processors = additional_processors + [
