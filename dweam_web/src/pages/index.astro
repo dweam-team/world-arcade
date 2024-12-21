@@ -14,31 +14,8 @@ const metadata = {
 ---
 
 <Layout metadata={metadata}>
-  <!-- <Hero 
-    actions={[
-      {
-        variant: 'primary',
-        text: 'Discord',
-        href: DISCORD_LINK,
-        target: '_blank',
-        icon: 'tabler:brand-discord',
-      }
-    ]}
-  >
-    <Fragment slot="title">
-      The Platform for Fully Generative Games
-    </Fragment>
-
-    <Fragment slot="subtitle">
-      No Game Engine. Endless Possibilities. Turning Dweams into Reality.
-    </Fragment>
-
-    <Fragment slot="description">
-      For latest updates, join our Discord server below.
-    </Fragment>
-  </Hero> -->
   <LoadingOverlay client:load />
-
+  
   <GameCarouselReact client:load />
   <div class="mt-16">
     <GameGridReact client:load />

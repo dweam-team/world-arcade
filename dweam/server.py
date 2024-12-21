@@ -416,3 +416,36 @@ async def get_params_schema_by_session(
                  session_id=session_id, 
                  error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get('/loading_status')
+async def loading_status(
+    request: Request,
+    log: BoundLogger = Depends(logger_dependency),
+):
+    """Stream loading status messages while games are being installed"""
+    if not is_loading:
+        return JSONResponse({"status": "ready"})
+
+    async def event_generator():
+        global game_loading_thread
+        if not game_loading_thread:
+            return
+            
+        last_message = None
+        while game_loading_thread.is_alive():
+            if hasattr(game_loading_thread, 'last_log_line') and game_loading_thread.last_log_line != last_message:
+                last_message = game_loading_thread.last_log_line
+                if last_message:
+                    yield {
+                        "event": "loading",
+                        "data": last_message
+                    }
+            await asyncio.sleep(0.1)
+            
+        # Send final ready message
+        yield {
+            "event": "ready",
+            "data": "Games loaded successfully"
+        }
+
+    return EventSourceResponse(event_generator())

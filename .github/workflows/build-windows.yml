@@ -180,7 +180,6 @@ jobs:
         echo Building release version...
         poetry run pyinstaller main.py --name dweam ^
           --noconsole ^
-          --onefile ^
           --add-data "dweam_web\dist\server;frontend\server" ^
           --add-data "dweam_web\dist\client;frontend\client" ^
           --add-binary "node.exe;." ^
@@ -198,8 +197,18 @@ jobs:
           --log-level INFO > pyinstaller_build_release.log 2>&1
         
         echo Verifying release build output...
-        if not exist "dist\dweam.exe" (
-          echo ERROR: Release executable is missing!
+        # if not exist "dist\dweam.exe" (
+        #   echo ERROR: Release executable is missing!
+        #   exit 1
+        # )
+        dir dist\dweam\_internal\frontend /s
+        dir dist\dweam\_internal\dweam /s
+        if not exist "dist\dweam\_internal\frontend\client" (
+          echo ERROR: Frontend client files are missing from release build output!
+          exit 1
+        )
+        if not exist "dist\dweam\_internal\frontend\server" (
+          echo ERROR: Frontend server files are missing from release build output!
           exit 1
         )
         type pyinstaller_build_release.log
@@ -208,4 +217,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: dweam-windows
-        path: dist/dweam.exe
+        # path: dist/dweam.exe
+        path: dist/dweam/*
