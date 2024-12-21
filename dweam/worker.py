@@ -79,8 +79,10 @@ class GameWorker:
                 stdout_str = stdout_data.decode() if stdout_data else None
             except asyncio.TimeoutError:
                 self.log.warning("Timeout reading stdout")
+                return stdout_str, stderr_str
             except Exception:
                 self.log.exception("Error reading stdout")
+                return stdout_str, stderr_str
 
         if process.stderr:
             try:
@@ -89,8 +91,10 @@ class GameWorker:
                 stderr_str = stderr_data.decode() if stderr_data else None
             except asyncio.TimeoutError:
                 self.log.warning("Timeout reading stderr")
+                return stdout_str, stderr_str
             except Exception:
                 self.log.exception("Error reading stderr")
+                return stdout_str, stderr_str
 
         return stdout_str, stderr_str
 
