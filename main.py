@@ -325,14 +325,22 @@ def main():
     
     # Create a window with webview instead of opening browser
     logger.info(f"Opening webview window at {frontend_url}")
+    
+    # Get icon path
+    # if hasattr(sys, '_MEIPASS'):
+    #     # In bundled app
+    #     icon_path = os.path.join(sys._MEIPASS, 'assets', 'icon.ico')
+    # else:
+    #     # In development
+    #     icon_path = os.path.join(os.path.dirname(__file__), 'assets', 'icon.ico')
+    
     window = webview.create_window(
         title="Dweam", 
         url=frontend_url,
         width=1280,
-        height=800,
+        height=1000,
         resizable=True,
     )
-    
     # Start webview and wait for it to close
     webview.start(debug=True)
     

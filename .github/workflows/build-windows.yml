@@ -141,6 +141,8 @@ jobs:
           --add-data "node_modules;node_modules" ^
           --add-data "%pythonLocation%;python" ^
           --add-data "dweam_pkg;dweam" ^
+          --add-data "assets;assets" ^
+          --icon "assets\icon.ico" ^
           --hidden-import venv ^
           --hidden-import ensurepip ^
           --hidden-import pip ^
