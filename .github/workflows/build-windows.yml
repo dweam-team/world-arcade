@@ -123,7 +123,7 @@ jobs:
           if exist "%%d\examples" rmdir /s /q "%%d\examples"
         )
 
-    - name: Build Windows executable
+    - name: Prepare build environment
       shell: cmd
       run: |
         echo Preparing package structure...
@@ -132,7 +132,10 @@ jobs:
         copy poetry.lock dweam_pkg\
         copy README.md dweam_pkg\
         xcopy /E /I dweam dweam_pkg\dweam
-        
+
+    - name: Build Windows debug executable
+      shell: cmd
+      run: |
         echo Building debug version...
         poetry run pyinstaller main.py --name dweam-debug ^
           --add-data "dweam_web\dist\server;frontend\server" ^
@@ -149,29 +152,58 @@ jobs:
           --hidden-import setuptools ^
           --hidden-import wheel ^
           --hidden-import dweam ^
-          --log-level INFO > pyinstaller_build.log 2>&1
+          --log-level INFO > pyinstaller_build_debug.log 2>&1
         
-        echo Verifying build output...
+        echo Verifying debug build output...
         dir dist\dweam-debug\_internal\frontend /s
         dir dist\dweam-debug\_internal\dweam /s
         if not exist "dist\dweam-debug\_internal\frontend\client" (
-          echo ERROR: Frontend client files are missing from build output!
+          echo ERROR: Frontend client files are missing from debug build output!
           exit 1
         )
         if not exist "dist\dweam-debug\_internal\frontend\server" (
-          echo ERROR: Frontend server files are missing from build output!
+          echo ERROR: Frontend server files are missing from debug build output!
           exit 1
         )
-        type pyinstaller_build.log
-
-    # - name: Upload release artifact
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: dweam-windows
-    #     path: dist/dweam.exe
+        type pyinstaller_build_debug.log
 
     - name: Upload debug artifact
       uses: actions/upload-artifact@v4
       with:
         name: dweam-windows-debug
         path: dist/dweam-debug/*
+
+    - name: Build Windows release executable
+      shell: cmd
+      run: |
+        echo Building release version...
+        poetry run pyinstaller main.py --name dweam ^
+          --onefile ^
+          --add-data "dweam_web\dist\server;frontend\server" ^
+          --add-data "dweam_web\dist\client;frontend\client" ^
+          --add-binary "node.exe;." ^
+          --add-data "node_modules;node_modules" ^
+          --add-data "%pythonLocation%;python" ^
+          --add-data "dweam_pkg;dweam" ^
+          --add-data "assets;assets" ^
+          --icon "assets\icon.ico" ^
+          --hidden-import venv ^
+          --hidden-import ensurepip ^
+          --hidden-import pip ^
+          --hidden-import setuptools ^
+          --hidden-import wheel ^
+          --hidden-import dweam ^
+          --log-level INFO > pyinstaller_build_release.log 2>&1
+        
+        echo Verifying release build output...
+        if not exist "dist\dweam.exe" (
+          echo ERROR: Release executable is missing!
+          exit 1
+        )
+        type pyinstaller_build_release.log
+
+    - name: Upload release artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: dweam-windows
+        path: dist/dweam.exe
