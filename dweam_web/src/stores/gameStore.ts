@@ -16,6 +16,7 @@ export type GameStore = Record<string, Record<string, GameInfo>>;
 
 export const games = atom<GameStore>({});
 export const isLoading = atom<boolean>(true);
+export const loadingMessage = atom<string | null>(null);
 
 export interface ParamsSchema {
   schema: Record<string, any>;
@@ -28,7 +29,9 @@ export const paramsSchema = atom<ParamsSchema | null>(null);
 export async function initializeStore() {
   try {
     const status = await api.getStatus();
+    console.log('Status response:', status);
     isLoading.set(status.is_loading);
+    loadingMessage.set(status.loading_message || null);
 
     // Get initial games
     const gamesData = await api.getGameInfo();
@@ -47,7 +50,9 @@ function startPolling() {
   let pollInterval = setInterval(async () => {
     try {
       const status = await api.getStatus();
+      console.log('Polling status:', status);
       isLoading.set(status.is_loading);
+      loadingMessage.set(status.loading_message || null);
       const gamesData = await api.getGameInfo();
       games.set(gamesData);
 

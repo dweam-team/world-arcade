@@ -6,6 +6,7 @@ import { DISCORD_LINK, GITHUB_LINK } from '../components/constants';
 
 import GameCarouselReact from '~/components/dweam/GameCarouselReact';
 import GameGridReact from '~/components/dweam/GameGridReact';
+import LoadingOverlay from '~/components/dweam/LoadingOverlay';
 
 const metadata = {
   ignoreTitleTemplate: true,
@@ -36,6 +37,7 @@ const metadata = {
       For latest updates, join our Discord server below.
     </Fragment>
   </Hero> -->
+  <LoadingOverlay client:load />
 
   <GameCarouselReact client:load />
   <div class="mt-16">

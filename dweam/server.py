@@ -33,12 +33,51 @@ from sse_starlette.sse import EventSourceResponse
 log = get_logger()
 is_loading = True
 games: defaultdict[str, dict[str, GameInfo]] = defaultdict(dict)
+game_loading_thread = None
 
 def _load_games():
     global games
     global is_loading
-    venv_path = get_venv_path(log)
-    load_games(log, venv_path, games)
+    global game_loading_thread
+    global log
+    
+    # Store last log message on the thread object
+    game_loading_thread = threading.current_thread()
+    game_loading_thread.last_log_line = None
+    
+    # Create a log handler that updates the thread's last_log_line
+    class ThreadLogHandler:
+        def __call__(self, logger, name, event_dict):
+            # Format the log message with context
+            message = event_dict.get('event', '')
+            if 'msg' in event_dict:
+                message = f"{message}: {event_dict['msg']}"
+            
+            # Add relevant context from the event dict
+            context_keys = ['path', 'name', 'package', 'url']  # Add any other relevant keys
+            context = []
+            for key in context_keys:
+                if key in event_dict:
+                    context.append(f"{key}={event_dict[key]}")
+            
+            if context:
+                message = f"{message} ({', '.join(context)})"
+            
+            game_loading_thread.last_log_line = message
+            return event_dict
+    
+    # Configure structlog to use our processor for this thread
+    import structlog
+    games_loading_log = structlog.wrap_logger(
+        log,
+        processors=[
+            ThreadLogHandler(),
+            *structlog.get_config()["processors"]  # Keep existing processors
+        ]
+    )
+    
+    venv_path = get_venv_path(games_loading_log)
+    load_games(games_loading_log, venv_path, games)
     is_loading = False
 
 game_loading_thread = None
@@ -74,7 +113,15 @@ active_workers: dict[str, GameWorker] = {}
 
 @app.get('/status')
 async def status() -> StatusResponse:
-    return StatusResponse(is_loading=is_loading)
+    message = None
+    if is_loading and game_loading_thread and hasattr(game_loading_thread, 'last_log_line'):
+        message = game_loading_thread.last_log_line
+    response = StatusResponse(
+        is_loading=is_loading,
+        loading_message=message
+    )
+    print(f"Status response: {response}")
+    return response
 
 # Endpoint to serve the entire games list
 @app.get('/game_info')
