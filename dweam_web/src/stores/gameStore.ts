@@ -15,7 +15,7 @@ export interface GameInfo {
 export type GameStore = Record<string, Record<string, GameInfo>>;
 
 export const games = atom<GameStore>({});
-export const isLoading = atom<boolean>(true);
+export const isLoading = atom<boolean>(false);
 export const loadingMessage = atom<string | null>(null);
 export const loadingDetail = atom<string | null>(null);
 
@@ -29,19 +29,24 @@ export const paramsSchema = atom<ParamsSchema | null>(null);
 // Initialize store
 export async function initializeStore() {
   try {
+    // Set initial loading state to false before checking status
+    isLoading.set(false);
+    loadingMessage.set(null);
+    loadingDetail.set(null);
+
     const status = await api.getStatus();
     console.log('Status response:', status);
-    isLoading.set(status.is_loading);
-    loadingMessage.set(status.loading_message || null);
-    loadingDetail.set(status.loading_detail || null);
+    
+    if (status.is_loading) {
+      isLoading.set(true);
+      loadingMessage.set(status.loading_message || null);
+      loadingDetail.set(status.loading_detail || null);
+      startPolling();
+    }
 
     // Get initial games
     const gamesData = await api.getGameInfo();
     games.set(gamesData);
-
-    if (status.is_loading) {
-      startPolling();
-    }
   } catch (error) {
     console.error('Error initializing store:', error);
     startPolling();

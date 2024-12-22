@@ -1,10 +1,15 @@
 import { useStore } from '@nanostores/react';
-import { isLoading, loadingMessage, loadingDetail } from '../../stores/gameStore';
+import { useEffect } from 'react';
+import { isLoading, loadingMessage, loadingDetail, initializeStore } from '../../stores/gameStore';
 
 export default function LoadingOverlay() {
   const loading = useStore(isLoading);
   const message = useStore(loadingMessage);
   const detail = useStore(loadingDetail);
+
+  useEffect(() => {
+    initializeStore();
+  }, []);
 
   console.log('LoadingOverlay render:', { loading, message, detail });
 
