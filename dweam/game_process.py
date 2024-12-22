@@ -17,6 +17,7 @@ from aiortc.contrib.signaling import object_from_string, object_to_string
 import torch
 import os
 import socket
+from dweam.utils.process import patch_subprocess_popen
 
 from dweam.utils.entrypoint import load_games, get_cache_dir
 from dweam.commands import (
@@ -136,6 +137,9 @@ class GameRTCConnection:
         # Game cleanup will be handled by the main process
 
 async def main():
+    # Patch subprocess to hide windows in release mode
+    patch_subprocess_popen()
+    
     log = get_logger().bind(process="worker")
     log.info("Starting worker process")
 

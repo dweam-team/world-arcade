@@ -21,6 +21,15 @@ from dweam.utils.turn import create_turn_credentials, get_turn_stun_urls
 from dweam.constants import JS_TO_PYGAME_KEY_MAP, JS_TO_PYGAME_BUTTON_MAP
 from structlog.stdlib import BoundLogger
 from dweam.commands import Command, Response, SchemaCommand, StopCommand, UpdateParamsCommand, HandleOfferCommand, OfferData, ErrorResponse
+from dweam.utils.process import get_asyncio_subprocess_flags
+
+def is_debug_build() -> bool:
+    """Detect if we're running the debug build based on executable name"""
+    if getattr(sys, 'frozen', False):
+        # We're running in a PyInstaller bundle
+        executable_path = sys.executable
+        return 'debug' in os.path.basename(executable_path).lower()
+    return True  # In development environment, always use debug mode
 
 class GameWorker:
     def __init__(
@@ -166,7 +175,8 @@ class GameWorker:
                     str(port),
                     stdin=asyncio.subprocess.PIPE,
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                    stderr=asyncio.subprocess.PIPE,
+                    creationflags=get_asyncio_subprocess_flags()
                 )
                 self.log.info("Started worker process", pid=self.process.pid)
 

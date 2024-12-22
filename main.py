@@ -12,6 +12,7 @@ import ctypes
 from fastapi.staticfiles import StaticFiles
 from dweam.server import app
 import socket
+from dweam.utils.process import is_debug_build, get_subprocess_flags, patch_subprocess_popen
 
 def setup_logging():
     """Set up logging to both file and debug console"""
@@ -50,14 +51,6 @@ def setup_logging():
         f.write(f'Latest log file: {log_file}')
     
     return log_file
-
-def is_debug_build() -> bool:
-    """Detect if we're running the debug build based on executable name"""
-    if getattr(sys, 'frozen', False):
-        # We're running in a PyInstaller bundle
-        executable_path = sys.executable
-        return 'debug' in os.path.basename(executable_path).lower()
-    return True  # In development environment, always use debug mode
 
 def create_debug_console():
     """Create a separate console window for debug output on Windows"""
@@ -130,15 +123,8 @@ def run_backend(host, port):
     log_config["formatters"]["access"]["use_colors"] = False
     
     try:
-        # Set creation flags based on debug mode
-        if sys.platform == 'win32' and not is_debug_build():
-            # Monkey patch uvicorn's subprocess creation to hide console
-            original_Popen = subprocess.Popen
-            def Popen_no_window(*args, **kwargs):
-                if 'creationflags' not in kwargs:
-                    kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-                return original_Popen(*args, **kwargs)
-            subprocess.Popen = Popen_no_window
+        # Patch subprocess to hide windows in release mode
+        patch_subprocess_popen()
         
         uvicorn.run(app, host=host, port=port, log_config=log_config)
     except Exception as e:
@@ -218,11 +204,6 @@ def run_frontend(host, port, backend_port):
         
         import subprocess
         
-        # Set creation flags based on debug mode
-        creation_flags = 0
-        if sys.platform == 'win32' and not is_debug_build():
-            creation_flags = subprocess.CREATE_NO_WINDOW
-        
         # Run node process with real-time output
         process = subprocess.Popen(
             [node_exe, server_path],
@@ -232,7 +213,7 @@ def run_frontend(host, port, backend_port):
             bufsize=1,
             cwd=server_dir,
             env=env,
-            creationflags=creation_flags,
+            creationflags=get_subprocess_flags()
         )
         
         # Log output in real-time
