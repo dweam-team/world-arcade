@@ -1,3 +1,6 @@
+import logging
+logging.getLogger("aioice.ice").disabled = True
+
 import asyncio
 import json
 import sys
@@ -75,7 +78,7 @@ class GameRTCConnection:
                     
         @self.pc.on("connectionstatechange")
         async def on_connectionstatechange():
-            print(f"Connection state changed to: {self.pc.connectionState}", file=sys.stderr)
+            # print(f"Connection state changed to: {self.pc.connectionState}", file=sys.stderr)
             if self.pc.connectionState in ("failed", "closed", "disconnected"):
                 await self.cleanup()
 
