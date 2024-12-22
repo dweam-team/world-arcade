@@ -6,6 +6,7 @@ import venv
 from pathlib import Path
 from structlog.stdlib import BoundLogger
 from importlib.resources import files
+import time
 
 
 class PyInstallerEnvBuilder(venv.EnvBuilder):
@@ -230,21 +231,41 @@ def run_pip_with_output(log: BoundLogger, args: list[str]) -> int:
     )
     
     if sys.platform == "win32":
-        # Windows implementation - read streams one at a time
+        # Windows implementation - use threads
+        from threading import Thread
+        from queue import Queue, Empty
+        
+        def reader_thread(stream, queue):
+            """Thread to read from a stream and put lines into a queue"""
+            for line in stream:
+                queue.put(line)
+            stream.close()
+
+        # Start reader threads
+        stdout_queue = Queue()
+        stderr_queue = Queue()
+        Thread(target=reader_thread, args=(process.stdout, stdout_queue), daemon=True).start()
+        Thread(target=reader_thread, args=(process.stderr, stderr_queue), daemon=True).start()
+
         while True:
-            # Read stdout
-            stdout_line = process.stdout.readline()
-            if stdout_line:
-                log.info("pip stdout", output=stdout_line.strip())
-                
-            # Read stderr
-            stderr_line = process.stderr.readline()
-            if stderr_line:
-                log.info("pip stderr", output=stderr_line.strip())
-                
-            # Check if process has finished and no more output
-            if process.poll() is not None and not stdout_line and not stderr_line:
+            # Check if process has finished
+            if process.poll() is not None and stdout_queue.empty() and stderr_queue.empty():
                 break
+
+            # Read from queues
+            try:
+                line = stdout_queue.get_nowait()
+                log.info("pip stdout", output=line.strip())
+            except Empty:
+                pass
+
+            try:
+                line = stderr_queue.get_nowait()
+                log.info("pip stderr", output=line.strip())
+            except Empty:
+                pass
+
+            time.sleep(0.01)  # Small sleep to prevent CPU spinning
     else:
         # Unix implementation - use select
         import select
