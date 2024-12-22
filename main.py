@@ -52,11 +52,11 @@ def setup_logging():
     return log_file
 
 def is_debug_build() -> bool:
-    """Detect if we're running the debug build based on console window presence"""
-    if hasattr(sys, '_MEIPASS'):
-        # Check if we have a console window already attached
-        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
-        return kernel32.GetConsoleWindow() != 0  # True if console exists (debug build)
+    """Detect if we're running the debug build based on executable name"""
+    if getattr(sys, 'frozen', False):
+        # We're running in a PyInstaller bundle
+        executable_path = sys.executable
+        return 'debug' in os.path.basename(executable_path).lower()
     return True  # In development environment, always use debug mode
 
 def create_debug_console():
