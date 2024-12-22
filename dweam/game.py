@@ -138,6 +138,11 @@ class Game:
             mouse_x, mouse_y = 0, 0
             pygame.event.pump()
 
+            unprocessed_keys = set()
+            unprocessed_mouse = set()
+            keys_to_release = set()
+            mouse_to_release = set()
+
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEMOTION:
                     mouse_x += event.rel[0]
@@ -146,23 +151,31 @@ class Game:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button in self.mouse_pressed:
                         continue
-                    self.on_mouse_down(event.button)
                     self.mouse_pressed.add(event.button)
+                    self.on_mouse_down(event.button)
+                    unprocessed_mouse.add(event.button)
                 elif event.type == pygame.MOUSEBUTTONUP:
                     if event.button not in self.mouse_pressed:
                         continue
-                    self.mouse_pressed.remove(event.button)
-                    self.on_mouse_up(event.button)
+                    if event.button in unprocessed_mouse:
+                        mouse_to_release.add(event.button)
+                    else:
+                        self.mouse_pressed.remove(event.button)
+                        self.on_mouse_up(event.button)
                 elif event.type == pygame.KEYDOWN:
                     if event.key in self.keys_pressed:
                         continue
                     self.keys_pressed.add(event.key)
                     self.on_key_down(event.key)
+                    unprocessed_keys.add(event.key)
                 elif event.type == pygame.KEYUP:
                     if event.key not in self.keys_pressed:
                         continue
-                    self.keys_pressed.remove(event.key)
-                    self.on_key_up(event.key)
+                    if event.key in unprocessed_keys:
+                        keys_to_release.add(event.key)
+                    else:
+                        self.keys_pressed.remove(event.key)
+                        self.on_key_up(event.key)
             
             self.mouse_motion = (mouse_x, mouse_y)
             if self.mouse_motion != (0, 0):
@@ -172,10 +185,19 @@ class Game:
                 # self.log.debug("Initiating game step")
                 surface = self.step()
                 
+                # Now process any pending releases
+                for key in keys_to_release:
+                    self.keys_pressed.remove(key)
+                    self.on_key_up(key)
+                for button in mouse_to_release:
+                    self.mouse_pressed.remove(button)
+                    self.on_mouse_up(button)
+                
                 # Put new frame in buffer
                 while not self._frame_buffer.empty():
                     self._frame_buffer.get_nowait()
                 self._frame_buffer.put_nowait(surface)
+                
             self.one_step_queued = False
 
             self.clock.tick(30)  # TODO unhardcode FPS
