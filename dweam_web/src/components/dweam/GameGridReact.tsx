@@ -8,21 +8,18 @@ export default function GameGridReact() {
   const $games = useStore(games);
   const $isLoading = useStore(isLoading);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  // Track which sections are expanded
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-  const [initialized, setInitialized] = useState(false);
   
   useEffect(() => {
-    if (!initialized && Object.keys($games).length > 0) {
-      // Initial setup when games first load
-      const newExpanded = Object.keys($games).reduce((acc, type) => {
-        acc[type] = true;
-        return acc;
-      }, {} as Record<string, boolean>);
-      setExpandedSections(newExpanded);
-      setInitialized(true);
-    }
-  }, [$games, initialized]);
+    const newExpanded = Object.keys($games).reduce((acc, type) => {
+      acc[type] = true;
+      return acc;
+    }, {} as Record<string, boolean>);
+    setExpandedSections(prev => ({
+      ...prev,
+      ...newExpanded
+    }));
+  }, [$games]);
 
   useEffect(() => {
     const handleSearch = () => {
