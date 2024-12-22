@@ -130,6 +130,16 @@ def run_backend(host, port):
     log_config["formatters"]["access"]["use_colors"] = False
     
     try:
+        # Set creation flags based on debug mode
+        if sys.platform == 'win32' and not is_debug_build():
+            # Monkey patch uvicorn's subprocess creation to hide console
+            original_Popen = subprocess.Popen
+            def Popen_no_window(*args, **kwargs):
+                if 'creationflags' not in kwargs:
+                    kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+                return original_Popen(*args, **kwargs)
+            subprocess.Popen = Popen_no_window
+        
         uvicorn.run(app, host=host, port=port, log_config=log_config)
     except Exception as e:
         logger.error(f"Error starting backend server: {str(e)}", exc_info=True)
@@ -208,6 +218,11 @@ def run_frontend(host, port, backend_port):
         
         import subprocess
         
+        # Set creation flags based on debug mode
+        creation_flags = 0
+        if sys.platform == 'win32' and not is_debug_build():
+            creation_flags = subprocess.CREATE_NO_WINDOW
+        
         # Run node process with real-time output
         process = subprocess.Popen(
             [node_exe, server_path],
@@ -216,7 +231,8 @@ def run_frontend(host, port, backend_port):
             text=True,
             bufsize=1,
             cwd=server_dir,
-            env=env
+            env=env,
+            creationflags=creation_flags,
         )
         
         # Log output in real-time
