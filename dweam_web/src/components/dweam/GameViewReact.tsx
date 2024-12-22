@@ -12,6 +12,7 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
   const [isPointerLocked, setIsPointerLocked] = useState(false);
   const [connectionState, setConnectionState] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
@@ -139,6 +140,7 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
     if (connectionState === 'connecting') return;
     
     setConnectionState('connecting');
+    setError(null);
 
     // Create new AbortController for this connection
     abortControllerRef.current = new AbortController();
@@ -241,6 +243,7 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
     } catch (error) {
       if (error.name !== 'AbortError') {  // Don't show error for normal aborts
         console.error('Connection failed:', error);
+        setError(loadingMessage || 'Failed to connect to game');
         cleanup();
       }
     }
@@ -271,6 +274,13 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
                     {loadingMessage}
                   </div>
                 )}
+              </>
+            ) : error ? (
+              <>
+                <div className="text-4xl mb-4">⚠️ Error</div>
+                <div className="text-sm font-mono opacity-75 max-w-md text-center px-4">
+                  {error}
+                </div>
               </>
             ) : (
               '▶'
