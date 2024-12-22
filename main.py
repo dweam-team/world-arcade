@@ -61,6 +61,10 @@ def is_debug_build() -> bool:
 
 def create_debug_console():
     """Create a separate console window for debug output on Windows"""
+    # Only create console in debug mode
+    if not is_debug_build():
+        return
+        
     if sys.platform == 'win32':
         try:
             kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
