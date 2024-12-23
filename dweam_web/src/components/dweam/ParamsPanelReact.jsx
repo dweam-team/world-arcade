@@ -10,9 +10,9 @@ const CustomInput = (props) => {
   return (
     <input
       id={id}
-      className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg
+      className="w-full px-4 py-3 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-700 rounded-lg
                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-                 text-white placeholder-gray-500
+                 text-gray-900 dark:text-white placeholder-gray-500
                  disabled:opacity-50 disabled:cursor-not-allowed"
       value={value || ''}
       required={required}
@@ -30,14 +30,14 @@ const CustomCheckbox = (props) => {
       <input
         id={id}
         type="checkbox"
-        className="h-5 w-5 rounded border-gray-700 bg-gray-900/50
-                   text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-800
+        className="h-5 w-5 rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/50
+                   text-blue-500 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-800
                    disabled:opacity-50 disabled:cursor-not-allowed"
         checked={value || false}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
       />
-      <label htmlFor={id} className="ml-2 text-gray-300">
+      <label htmlFor={id} className="ml-2 text-gray-700 dark:text-gray-300">
         {label}
       </label>
     </div>
@@ -49,9 +49,9 @@ const CustomSelect = (props) => {
   return (
     <select
       id={id}
-      className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg
+      className="w-full px-4 py-3 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-700 rounded-lg
                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-                 text-white
+                 text-gray-900 dark:text-white
                  disabled:opacity-50 disabled:cursor-not-allowed
                  text-base"
       value={value || ''}
@@ -60,7 +60,7 @@ const CustomSelect = (props) => {
       onChange={(event) => onChange(event.target.value)}
     >
       {options.enumOptions.map(({ label, value }) => (
-        <option key={value} value={value} className="bg-gray-800 text-white py-2">
+        <option key={value} value={value} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white py-2">
           {label}
         </option>
       ))}
@@ -72,14 +72,14 @@ const CustomFieldTemplate = (props) => {
   const { id, label, help, required, description, errors, children } = props;
   return (
     <div className="mb-8 pd-4">
-      <label htmlFor={id} className="block text-lg text-gray-300 mb-2">
+      <label htmlFor={id} className="block text-lg text-gray-700 dark:text-gray-300 mb-2">
         {label}
-        {required && <span className="text-red-400 ml-1">*</span>}
+        {required && <span className="text-red-500 dark:text-red-400 ml-1">*</span>}
       </label>
       {children}
-      {description && <p className="text-sm text-gray-600 mt-2">{description}</p>}
-      {errors && <div className="text-red-400 text-sm mt-2">{errors}</div>}
-      {help && <div className="text-sm text-gray-600 mt-2">{help}</div>}
+      {description && <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{description}</p>}
+      {errors && <div className="text-red-500 dark:text-red-400 text-sm mt-2">{errors}</div>}
+      {help && <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">{help}</div>}
     </div>
   );
 };
@@ -88,8 +88,8 @@ const CustomObjectFieldTemplate = (props) => {
   const { title, description, properties } = props;
   return (
     <div>
-      {title && <h3 className="text-xl text-gray-200 font-semibold mb-4">{title}</h3>}
-      {description && <p className="text-sm text-gray-500 mb-6">{description}</p>}
+      {title && <h3 className="text-xl text-gray-800 dark:text-gray-200 font-semibold mb-4">{title}</h3>}
+      {description && <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{description}</p>}
       <div className="flex flex-col gap-16">
         {properties.map((prop) => prop.content)}
       </div>
@@ -182,8 +182,8 @@ function ParamsPanelReact({ gameType, gameId }) {
   }
 
   return (
-    <div className="bg-gray-800/80 p-8 rounded-2xl">
-      <h2 className="text-2xl font-bold text-gray-200 mb-8">Parameters</h2>
+    <div className="bg-gray-100 dark:bg-gray-800 p-8 rounded-2xl">
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-8">Parameters</h2>
       <div className="w-full">
         <style>
           {`
