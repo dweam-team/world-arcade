@@ -14,7 +14,7 @@ Dweamworld is an open-source platform that makes it easy to play them locally, o
 
 - **Browse open-source game models**
      
-     Collecting together all the available games made open-source by [Diamond](https://github.com/eloialonso/diamond), [Decart](https://github.com/XmYx/open-oasis), and other world creators!
+     Collecting together all the available games made open-source by [Diamond](https://github.com/eloialonso/diamond) and other world creators!
   
 <img src="https://github.com/user-attachments/assets/297dcd2a-373a-42d0-9296-33b781244a6a" width="800"/>
 <br> </br>
