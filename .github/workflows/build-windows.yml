@@ -219,3 +219,36 @@ jobs:
         name: dweam-windows
         # path: dist/dweam.exe
         path: dist/dweam/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip release artifacts
+        run: |
+          cd artifacts
+          zip -r dweam-windows.zip dweam-windows/
+          zip -r dweam-windows-debug.zip dweam-windows-debug/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: Release 0.0.${{ github.run_number }}
+          tag_name: v0.0.${{ github.run_number }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/dweam-windows.zip
+            artifacts/dweam-windows-debug.zip
+          generate_release_notes: true
