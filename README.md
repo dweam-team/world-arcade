@@ -16,21 +16,22 @@ Dweamworld is an open-source platform that makes it easy to play them locally, o
      
      Collecting together all the available games made open-source by [Diamond](https://github.com/eloialonso/diamond) and other world creators!
   
-<img src="https://github.com/user-attachments/assets/297dcd2a-373a-42d0-9296-33b781244a6a" width="800"/>
+<img src="https://github.com/user-attachments/assets/a2c741eb-70c4-46ad-8fe7-87a375fe56e2" width="800"/>
 <br> </br>
 
 - **Play Games**
 
     Jump into Yume Nikki, CS:GO, Atari Arcade Games or Mario Kart 64.
 
-<img src="https://github.com/user-attachments/assets/5d2941ab-4373-49bc-bf2c-8fe5bf5fba86" width="388"/> <img src="https://github.com/user-attachments/assets/9e21dbb0-1d39-4b6c-963c-0f5cf3cd2dc7" width="412"/>
-
+<img src="https://github.com/user-attachments/assets/5e19e980-4ad2-49e8-9fb6-6665ce425ecb" width="387"/> <img src="https://github.com/user-attachments/assets/9c6e9e7d-10db-4fd2-9071-91bc8d28d46c" width="413"/>
+<br> </br>
 
 - **Change Parameters**
 
    Adjust settings to allow higher FPS on lower-end GPUs (at the expense of game stability/quality).
 
-<img src="https://github.com/user-attachments/assets/9e0b8c55-b846-41fd-89bc-2c948b938797" width="800"/>
+<img src="https://github.com/user-attachments/assets/8d074bba-6852-4983-acb7-caa2341df37f" width="800"/>
+<br> </br>
 
 ## Requirements
 
@@ -47,7 +48,7 @@ The Minecraft games are only supported on Linux; you can use [WSL](https://docs.
 2. Unzip the file using [7Zip](https://www.7-zip.org/).
 3. Double-click dweam.exe, wait for the games to install, and start playing!
 
-<img src="https://github.com/user-attachments/assets/a665618f-693c-4ee0-af9d-f5e653637d96" width="500"/>
+<img src="https://github.com/user-attachments/assets/79378c28-5e48-46fe-b6df-770bc4c79068" width="800"/>
 
 ### Linux
 
@@ -152,6 +153,6 @@ Soon we'll make this a local configuration file ^w^"
 
 Love any contributions from the community!
 
-Open a GitHub issue or join our [discord](https://discord.gg/aY3GAqMqBf) to chat.
+Open a GitHub issue or join our [Discord server](https://discord.gg/aY3GAqMqBf) to chat.
 
 Leave a star if you'd like to see this project grow! ❤️ ⭐️
