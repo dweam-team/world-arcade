@@ -6,6 +6,8 @@ Run generative games on your own GPU.
 
 Unlike traditional games, that run on a deterministic game engine, generative games use an interactive video model to generate every frame of the game in real-time, reacting to your button presses.
 
+Currently, the models are dispersed across Github and hard to find. Even when you find one, it takes technical knowledge and time to run them yourself. So we're bringing them together for you to play.
+
 Dweamworld is an open-source platform that makes it easy to play them locally, or stream from a server. 
 
 ## Features
@@ -14,21 +16,21 @@ Dweamworld is an open-source platform that makes it easy to play them locally, o
      
      Collecting together all the available games made open-source by [Diamond](https://github.com/eloialonso/diamond), [Decart](https://github.com/XmYx/open-oasis), and other world creators!
   
-<img src="https://github.com/user-attachments/assets/297dcd2a-373a-42d0-9296-33b781244a6a" width="1000"/>
+<img src="https://github.com/user-attachments/assets/297dcd2a-373a-42d0-9296-33b781244a6a" width="800"/>
 <br> </br>
 
 - **Play Games**
 
     Jump into Yume Nikki, CS:GO, Atari Games, Minecraft or Mario Kart.
 
-<img src="https://github.com/user-attachments/assets/5d2941ab-4373-49bc-bf2c-8fe5bf5fba86" height="335"/> <img src="https://github.com/user-attachments/assets/9e21dbb0-1d39-4b6c-963c-0f5cf3cd2dc7" height="334"/>
+<img src="https://github.com/user-attachments/assets/5d2941ab-4373-49bc-bf2c-8fe5bf5fba86" width="388"/> <img src="https://github.com/user-attachments/assets/9e21dbb0-1d39-4b6c-963c-0f5cf3cd2dc7" width="412"/>
 
 
 - **Change Parameters**
 
    Adjust settings to allow higher FPS on lower-end GPUs (at the expense of game stability/quality).
 
-<img src="https://github.com/user-attachments/assets/9e0b8c55-b846-41fd-89bc-2c948b938797" width="600"/>
+<img src="https://github.com/user-attachments/assets/9e0b8c55-b846-41fd-89bc-2c948b938797" width="800"/>
 
 ## Requirements
 
