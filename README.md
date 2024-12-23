@@ -116,6 +116,30 @@ class MyGame(Game):
         ...
 ```
 
+### Add Metadata
+
+Add a `dweam.toml` file with the game's metadata.
+
+```toml
+# my_game/dweam.toml
+
+type = "Awesome Games"
+entrypoint = "my_game.dweam_game:MyGame"
+repo_link = "https://github.com/awesome-games/my-game"
+
+[games.my_game]
+title = "My Game"
+tags = ["First Person"]
+description = "A game made by me"
+
+[games.my_game.buttons]
+"⬆️ Forward" = "W"
+"⬇️ Back" = "S"
+"⬅️ Left" = "A"
+"➡️ Right" = "D"
+"🆙 Jump" = "Space"
+```
+
 ### Share it
 
 For now we're hardcoding the game packages in the [`entrypoint.py`](dweam/utils/entrypoint.py#L30) file – please submit a pull request to add your game, in the form of a GitHub repo URL or python package.
