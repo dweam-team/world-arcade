@@ -55,6 +55,7 @@ DEFAULT_SOURCE_CONFIG = SourceConfig(
             GitBranchSource(
                 git="https://github.com/dweam-team/open-oasis",
                 branch="master",
+                markers="platform_system != 'Windows'",  # triton does not support Windows
             ),
         ],
         "diamond_mariokart": [
