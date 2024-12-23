@@ -20,7 +20,7 @@ def get_subprocess_flags() -> int:
 def get_asyncio_subprocess_flags() -> int:
     """Get the appropriate asyncio subprocess creation flags based on build type"""
     if sys.platform == "win32" and not is_debug_build():
-        return asyncio.subprocess.CREATE_NO_WINDOW
+        return subprocess.CREATE_NO_WINDOW
     return 0
 
 def patch_subprocess_popen():
