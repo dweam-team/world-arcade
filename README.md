@@ -1,6 +1,6 @@
 # ☁️ Dweamworld
 
-[![Discord](https://img.shields.io/badge/Join%20our%20Discord-purple)](https://discord.gg/aY3GAqMqBf) [![Windows Application](https://img.shields.io/badge/Windows%20Application-grey)](https://github.com/dweam-team/dweamworld-internal/actions/runs/12452479607/artifacts/2353039390)
+[![Discord](https://img.shields.io/badge/Join%20our%20Discord-purple)](https://discord.gg/aY3GAqMqBf) [![Windows Application](https://img.shields.io/badge/Windows%20Application-grey)](https://github.com/dweam-team/dweamworld-internal/releases)
 
 Run generative games on your own GPU.
 
