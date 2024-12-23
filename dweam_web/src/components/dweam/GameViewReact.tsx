@@ -232,7 +232,7 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
           type: pc.localDescription!.type
         },
         setLoadingMessage,
-        abortControllerRef.current.signal  // Pass the signal
+        abortControllerRef.current.signal
       );
 
       await pc.setRemoteDescription(new RTCSessionDescription(response));
@@ -243,7 +243,7 @@ export default function GameViewReact({ gameType, gameId }: GameViewReactProps) 
     } catch (error) {
       if (error.name !== 'AbortError') {  // Don't show error for normal aborts
         console.error('Connection failed:', error);
-        setError(loadingMessage || 'Failed to connect to game');
+        setError(error.message || loadingMessage || 'Failed to connect to game');
         cleanup();
       }
     }
