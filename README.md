@@ -1,6 +1,6 @@
 # ☁️ Dweamworld
 
-[![Discord](https://img.shields.io/badge/Join%20our%20Discord-purple)](https://discord.gg/aY3GAqMqBf) [![Windows Application](https://img.shields.io/badge/Windows%20Application-grey)](https://github.com/dweam-team/dweamworld-internal/releases)
+[![Discord](https://img.shields.io/badge/Join%20our%20Discord-purple)](https://discord.gg/aY3GAqMqBf) [![Windows Application](https://img.shields.io/badge/Windows%20Application-grey)](https://github.com/dweam-team/dweamworld/releases)
 
 Run generative games on your own GPU.
 
@@ -21,7 +21,7 @@ Dweamworld is an open-source platform that makes it easy to play them locally, o
 
 - **Play Games**
 
-    Jump into Yume Nikki, CS:GO, Atari Games, Minecraft or Mario Kart.
+    Jump into Yume Nikki, CS:GO, Atari Arcade Games or Mario Kart 64.
 
 <img src="https://github.com/user-attachments/assets/5d2941ab-4373-49bc-bf2c-8fe5bf5fba86" width="388"/> <img src="https://github.com/user-attachments/assets/9e21dbb0-1d39-4b6c-963c-0f5cf3cd2dc7" width="412"/>
 
@@ -43,7 +43,7 @@ The Minecraft games are only supported on Linux; you can use [WSL](https://docs.
 
 ### Windows
 
-1. Download dweam.exe from the [latest release](https://github.com/dweam-team/dweamworld-internal/releases).
+1. Download dweam-windows.zip from the [latest release](https://github.com/dweam-team/dweamworld/releases).
 2. Unzip the file using [7Zip](https://www.7-zip.org/).
 3. Double-click dweam.exe, wait for the games to install, and start playing!
 
