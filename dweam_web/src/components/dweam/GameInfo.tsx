@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { GameInfo as GameInfoType } from '~/stores/gameStore';
+import { useEffect } from 'react';
 
 interface GameInfoProps {
   type: string;
@@ -60,31 +61,42 @@ const styles = {
   } satisfies CSSProperties,
 } as const;
 
-// Add global styles to handle hover states
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
-  styleSheet.textContent = `
-    .carousel-slide .game-info {
-      transform: translateY(calc(100% - 70px)) !important;
-    }
-    
-    .game-container:hover .game-info {
-      transform: translateY(0) !important;
-    }
-    
-    .carousel-slide .game-name {
-      font-size: 2rem !important;
-    }
-    
-    .game-container:hover .game-tags {
-      opacity: 1 !important;
-      transition-delay: 0.1s !important;
-    }
-  `;
-  document.head.appendChild(styleSheet);
-}
-
 export default function GameInfo({ type, game }: GameInfoProps) {
+  // Add styles to document when component mounts
+  useEffect(() => {
+    const styleId = 'game-info-styles';
+    
+    // Only add if not already present
+    if (!document.getElementById(styleId)) {
+      const styleSheet = document.createElement('style');
+      styleSheet.id = styleId;
+      styleSheet.textContent = `
+        .carousel-slide .game-info {
+          transform: translateY(calc(100% - 70px)) !important;
+        }
+        
+        .game-container:hover .game-info {
+          transform: translateY(0) !important;
+        }
+        
+        .carousel-slide .game-name {
+          font-size: 2rem !important;
+        }
+        
+        .game-container:hover .game-tags {
+          opacity: 1 !important;
+          transition-delay: 0.1s !important;
+        }
+      `;
+      document.head.appendChild(styleSheet);
+    }
+
+    // Cleanup not strictly necessary but good practice
+    return () => {
+      // Don't remove on unmount as other components might need these styles
+    };
+  }, []);
+
   return (
     <div style={styles.gameInfo} className="game-info">
       <h2 style={styles.gameName} className="game-name">{game.title || game.id}</h2>
