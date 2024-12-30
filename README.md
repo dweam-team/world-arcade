@@ -1,6 +1,6 @@
-# ☁️ Dweamworld
+# ☁️ World Arcade
 
-[![Discord](https://img.shields.io/badge/Join%20our%20Discord-purple)](https://discord.gg/aY3GAqMqBf) [![Windows Application](https://img.shields.io/badge/Windows%20Application-grey)](https://github.com/dweam-team/dweamworld/releases)
+[![Discord](https://img.shields.io/badge/Join%20our%20Discord-purple)](https://discord.gg/aY3GAqMqBf) [![Windows Application](https://img.shields.io/badge/Windows%20Application-grey)](https://github.com/dweam-team/world-arcade/releases)
 
 Run generative games on your own GPU.
 
@@ -8,7 +8,7 @@ Unlike traditional games, that run on a deterministic game engine, generative ga
 
 Currently, the models are dispersed across Github and hard to find. Even when you find one, it takes technical knowledge and time to run them yourself. So we're bringing them together for you to play.
 
-Dweamworld is an open-source platform that makes it easy to play them locally, or stream from a server. 
+World Arcade is an open-source platform that makes it easy to play them locally, or stream from a server. 
 
 ## Features
 
@@ -44,7 +44,7 @@ The Minecraft games are only supported on Linux; you can use [WSL](https://docs.
 
 ### Windows
 
-1. Download dweam-windows.zip from the [latest release](https://github.com/dweam-team/dweamworld/releases).
+1. Download dweam-windows.zip from the [latest release](https://github.com/dweam-team/world-arcade/releases).
 2. Unzip the file using [7Zip](https://www.7-zip.org/).
 3. Double-click dweam.exe, wait for the games to install, and start playing!
 
@@ -63,8 +63,8 @@ Install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-nati
 #### Running
 
 ```
-git clone ssh://git@github.com/dweam-team/dweamworld
-cd dweamworld
+git clone ssh://git@github.com/dweam-team/world-arcade
+cd world-arcade
 docker compose up --build
 ```
 

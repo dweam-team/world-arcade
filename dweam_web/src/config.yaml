@@ -1,5 +1,5 @@
 site:
-  name: Dweamworld
+  name: World Arcade
   site: 'https://dweam.com'
   base: '/'
   trailingSlash: false
@@ -9,14 +9,14 @@ site:
 # Default SEO metadata
 metadata:
   title:
-    default: Dweamworld
-    template: '%s — Dweamworld'
+    default: World Arcade
+    template: '%s — World Arcade'
   description: "\U0001F680 Suitable for Startups, Small Business, Sass Websites, Professional Portfolios, Marketing Websites, Landing Pages & Blogs."
   robots:
     index: true
     follow: true
   openGraph:
-    site_name: Dweamworld
+    site_name: World Arcade
     images:
       - url: '~/assets/images/default.png'
         width: 1200
