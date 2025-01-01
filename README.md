@@ -16,21 +16,21 @@ World Arcade is an open-source platform that makes it easy to play them locally,
      
      Collecting together all the available games made open-source by [Diamond](https://github.com/eloialonso/diamond) and other world creators!
   
-<img src="https://github.com/user-attachments/assets/a2c741eb-70c4-46ad-8fe7-87a375fe56e2" width="800"/>
+<img src="https://github.com/user-attachments/assets/18c5949d-5dc6-4068-a253-d0015ecea0d9" width="800"/>
 <br> </br>
 
 - **Play Games**
 
-    Jump into Yume Nikki, CS:GO, Atari Arcade Games or Mario Kart 64.
+    Jump into Yume Nikki, CS:GO, Minecraft, Atari Arcade Games or Mario Kart 64.
 
-<img src="https://github.com/user-attachments/assets/5e19e980-4ad2-49e8-9fb6-6665ce425ecb" width="387"/> <img src="https://github.com/user-attachments/assets/9c6e9e7d-10db-4fd2-9071-91bc8d28d46c" width="413"/>
+<img src="https://github.com/user-attachments/assets/700d205e-d337-4cf2-bcf7-163b148f4b03" width="407"/> <img src="https://github.com/user-attachments/assets/0e50a802-1369-4ebb-9632-e11b9032f78f" width="393"/>
 <br> </br>
 
 - **Change Parameters**
 
    Adjust settings to allow higher FPS on lower-end GPUs (at the expense of game stability/quality).
 
-<img src="https://github.com/user-attachments/assets/8d074bba-6852-4983-acb7-caa2341df37f" width="800"/>
+<img src="https://github.com/user-attachments/assets/0d643748-0414-4b30-b5f6-bc36f1491f19" width="800"/>
 <br> </br>
 
 ## Requirements
