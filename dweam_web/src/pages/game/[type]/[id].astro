@@ -51,7 +51,7 @@ try {
                     </svg>
                   </div>
                 </button>
-                <div id="controls-wrapper" class="transition-all duration-300 overflow-hidden">
+                <div id="controls-wrapper" class="transition-all duration-300 overflow-hidden opacity-100">
                   <div id="controls-content" class="space-y-2 mt-4">
                     {Object.entries(gameData.buttons).map(([action, key]) => (
                       <div class="flex justify-between items-center">
@@ -143,13 +143,14 @@ try {
   const chevron = document.getElementById('controls-chevron');
   
   if (toggleButton && controlsWrapper && controlsContent && chevron) {
-    // Add a larger buffer to the height calculation
+    let isExpanded = true;
+    
     controlsWrapper.style.maxHeight = (controlsContent.offsetHeight + 24) + 'px';
     
     toggleButton.addEventListener('click', () => {
-      const isExpanded = controlsWrapper.style.maxHeight !== '0px';
+      isExpanded = !isExpanded;
       
-      if (isExpanded) {
+      if (!isExpanded) {
         controlsWrapper.style.maxHeight = '0px';
         controlsWrapper.style.opacity = '0';
         chevron.style.transform = 'rotate(-90deg)';
