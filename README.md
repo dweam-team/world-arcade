@@ -63,7 +63,7 @@ Install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-nati
 #### Running
 
 ```
-git clone ssh://git@github.com/dweam-team/world-arcade
+git clone https://github.com/dweam-team/world-arcade
 cd world-arcade
 docker compose up --build
 ```
