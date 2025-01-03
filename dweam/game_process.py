@@ -160,6 +160,8 @@ async def main():
     
     log.info("Parsed args", game_type=game_type, game_id=game_id, port=port)
     
+    log.info("Attempting to connect to parent", host='127.0.0.1', port=port)
+    
     try:
         # Connect to parent process
         reader, writer = await asyncio.open_connection(
@@ -168,7 +170,7 @@ async def main():
         )
         log.info("Connected to parent")
     except Exception as e:
-        log.error("Failed to connect to parent", error=str(e))
+        log.exception("Failed to connect to parent")
         raise
 
     # Load the game implementation
