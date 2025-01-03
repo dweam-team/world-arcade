@@ -89,7 +89,7 @@ Each set of games is implemented as a standalone python package that:
 1. Implements a `Game` class that subclasses `dweam.Game`.
 2. Provides a `dweam.toml` file with the game's metadata.
 
-See [diamond-yumenikki](https://github.com/dweam-team/diamond-yumenikki) or [diamond-csgo](https://github.com/dweam-team/diamond-csgo) for an example.
+See [diamond-yumenikki](https://github.com/dweam-team/diamond-yumenikki) or [diamond-csgo](https://github.com/dweam-team/diamond/tree/csgo) for an example.
 
 ### Implement it
 
