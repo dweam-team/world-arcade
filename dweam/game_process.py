@@ -189,6 +189,33 @@ class GameRTCConnection:
             await self.pc.close()
         # Game cleanup will be handled by the main process
 
+async def connect_with_retry(port: int, log: Any) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+    """Connect to parent process with retries"""
+    max_attempts = 5
+    base_delay = 0.1  # Start with 100ms delay
+    
+    for attempt in range(max_attempts):
+        try:
+            log.info("Attempting to connect to parent", 
+                    attempt=attempt + 1, 
+                    host='127.0.0.1', 
+                    port=port)
+            
+            return await asyncio.open_connection('127.0.0.1', port)
+            
+        except ConnectionRefusedError:
+            if attempt == max_attempts - 1:
+                log.exception("Failed to connect after all attempts")
+                raise
+                
+            delay = base_delay * (2 ** attempt)  # Exponential backoff
+            log.info("Connection refused, retrying", 
+                    attempt=attempt + 1,
+                    next_delay=delay)
+            await asyncio.sleep(delay)
+    
+    raise RuntimeError("Should not reach here")
+
 async def main():
     # Patch subprocess to hide windows in release mode
     patch_subprocess_popen()
@@ -213,14 +240,9 @@ async def main():
     
     log.info("Parsed args", game_type=game_type, game_id=game_id, port=port)
     
-    log.info("Attempting to connect to parent", host='127.0.0.1', port=port)
-    
     try:
-        # Connect to parent process
-        reader, writer = await asyncio.open_connection(
-            '127.0.0.1',
-            port
-        )
+        # Connect to parent process with retries
+        reader, writer = await connect_with_retry(port, log)
         log.info("Connected to parent")
     except Exception as e:
         log.exception("Failed to connect to parent")
