@@ -130,13 +130,11 @@ class GameWorker:
             worker_script = files('dweam').joinpath('game_process.py')
         
         max_retries = 3
-        retry_delay = 1.0
+        base_timeout = 5.0
 
         for attempt in range(max_retries):
             try:
-                if attempt > 0:
-                    self.log.info(f"Retry attempt {attempt + 1}/{max_retries}")
-                    await asyncio.sleep(retry_delay)
+                timeout = base_timeout * (2 ** attempt)  # 5s, 10s, 20s
                 
                 # Create a TCP server socket
                 client_connected = asyncio.Event()
@@ -211,7 +209,7 @@ class GameWorker:
                             done, pending = await asyncio.wait([
                                 asyncio.create_task(client_connected.wait()),
                                 asyncio.create_task(self.process.wait())
-                            ], timeout=5, return_when=asyncio.FIRST_COMPLETED)
+                            ], timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
 
                             # If process completed first, it means it crashed
                             if self.process.returncode is not None:
@@ -258,7 +256,9 @@ class GameWorker:
                     return  # Success!
                 except Exception:
                     self.log.exception("Error during connection")
-                    continue  # Retry
+                    if attempt == max_retries - 1:
+                        raise  # Re-raise on last attempt
+                    continue  # Try next attempt with exponential backoff
 
             except Exception:
                 self.log.exception(f"Attempt {attempt + 1} failed")
