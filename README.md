@@ -104,7 +104,7 @@ example.com {
 }
 ```
 
-## Adding a game
+## Developing new games
 
 Each set of games is implemented as a standalone python package that:
 
