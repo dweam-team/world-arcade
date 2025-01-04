@@ -72,15 +72,37 @@ Once it's running, visit [localhost:4321](http://localhost:4321).
 
 #### Exposing to the internet/local network
 
-By default, the backend and frontend will only bind to `localhost`.
-Use a reverse proxy (like [caddy](https://caddyserver.com/) or [nginx](https://nginx.org/)) to forward the following ports:
-- 8080 TCP
-- 4321 TCP
+If you're exposing the app to the internet, you should set a `TURN_SECRET_KEY` environment variable when running the app:
 
-Expose the following ports for WebRTC:
-- 3478 TCP/UDP
-- 5349 TCP/UDP
-- 50000-50010 UDP
+```
+export TURN_SECRET_KEY=$(openssl rand -base64 32)
+docker compose up --build
+```
+
+Forward the following ports:
+- 4321 TCP (app)
+- 3478 TCP/UDP (WebRTC)
+- 5349 TCP/UDP (WebRTC)
+- 50000-50010 UDP (WebRTC)
+
+By default, the app only binds to `localhost`.
+You may change this in the [`docker-compose.yaml`](docker-compose.yaml#L10-L11) file, 
+but we suggest the use of a reverse proxy to expose port 4321 TCP.
+
+For example, with [caddy](https://caddyserver.com/):
+
+```
+# Caddyfile
+
+example.com {
+        # Optionally add basic authentication
+        basic_auth {
+                [username] [password-hash]
+        }
+
+        reverse_proxy localhost:4321
+}
+```
 
 ## Adding a game
 
