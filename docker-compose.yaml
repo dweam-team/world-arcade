@@ -24,10 +24,6 @@ services:
       # TODO is this shmem thing right
       shm_size: 2gb
     image: dweam_backend:local
-    # TODO can we remove this exposure?
-    #  are any API calls being made directly still, is the frontend making them during serverside/redirecting them?
-    ports:
-      - "127.0.0.1:8080:8080"
     environment:
       - INTERNAL_TURN_URL=turnserver:3478
       - TURN_SECRET_KEY=${TURN_SECRET_KEY}
