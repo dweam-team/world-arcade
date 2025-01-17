@@ -68,13 +68,14 @@ def get_venv_path(log: BoundLogger) -> Path:
         home_dir = Path.home() / ".dweam"
     
     venv_path = home_dir / "dweam-venv"
+    log.info("Using venv path", path=str(venv_path), home_dir=str(home_dir))
     
     # If venv exists but is corrupted/incomplete, try to remove it
     if venv_path.exists():
         pip_path = venv_path / "Scripts" / "pip.exe" if sys.platform == "win32" else venv_path / "bin" / "pip"
         if pip_path.exists():
             return venv_path
-        log.warning("Pip not found; cleaning up corrupted venv")
+        log.warning("Pip not found; cleaning up corrupted venv", venv_path=str(venv_path))
         try:
             # On Windows, we need to ensure no processes are using the directory
             if sys.platform == "win32":
@@ -112,6 +113,7 @@ def get_venv_path(log: BoundLogger) -> Path:
 
 def create_and_setup_venv(log: BoundLogger, path: Path) -> Path:
     """Create a new virtual environment and return its path"""
+    log.info("Creating venv", path=str(path), exists=path.exists())
     if not getattr(sys, 'frozen', False):
         # In development, use normal venv creation
         builder = venv.EnvBuilder(
@@ -126,9 +128,10 @@ def create_and_setup_venv(log: BoundLogger, path: Path) -> Path:
     # In frozen app, use the copied Python
     python_exe = Path(sys._MEIPASS) / 'python' / 'python.exe'
     if not python_exe.exists():
+        log.error("Python executable not found", path=str(python_exe), meipass=str(sys._MEIPASS))
         raise RuntimeError(f"Python executable not found at {python_exe}")
 
-    log.debug("Creating venv using copied Python", python_exe=str(python_exe))
+    log.debug("Creating venv using copied Python", python_exe=str(python_exe), target_path=str(path))
     
     # Create venv using -m venv
     result = subprocess.run(
@@ -137,10 +140,12 @@ def create_and_setup_venv(log: BoundLogger, path: Path) -> Path:
         text=True
     )
     if result.returncode != 0:
+        log.error("Failed to create venv", stderr=result.stderr, stdout=result.stdout)
         raise RuntimeError(f"Failed to create venv: {result.stderr}")
 
     # Verify pip installation
     pip_path = path / "Scripts" / "pip.exe"
+    log.info("Checking pip installation", pip_path=str(pip_path), exists=pip_path.exists())
     if not pip_path.exists():
         raise RuntimeError("pip not found after venv creation")
 
