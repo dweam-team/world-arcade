@@ -76,6 +76,15 @@ DEFAULT_SOURCE_CONFIG = SourceConfig(
                 branch="csgo",
             ),
         ],
+        "snake_diffusion": [
+            PathSource(
+                path=Path("snake-diffusion"),
+            ),
+            GitBranchSource(
+                git="https://github.com/dweam-team/snake-diffusion",
+                branch="main",
+            ),
+        ],
         "diamond_atari": [
             PathSource(
                 path=Path("diamond"),
@@ -128,6 +137,7 @@ def install_game_source(log: BoundLogger, venv_path: Path, source: GameSource, n
         pip_base_args = [
             str(pip_path),
             "install",
+            # "--force-reinstall",
             "--extra-index-url",
             "https://download.pytorch.org/whl/cu121",
         ]
