@@ -29,71 +29,76 @@ from dweam.utils.venv import ensure_correct_dweam_version, run_pip_with_output
 # Define default sources for each game
 DEFAULT_SOURCE_CONFIG = SourceConfig(
     packages={
-        "diamond_yumenikki": [
+        "wham": [
             PathSource(
-                path=Path("diamond-yumenikki"),
-            ),
-            GitBranchSource(
-                git="https://github.com/dweam-team/diamond-yumenikki",
-                branch="master",
+                path=Path("wham"),
             ),
         ],
-        "lucid_v1": [
-            PathSource(
-                path=Path("lucid-v1"),
-            ),
-            GitBranchSource(
-                git="https://github.com/dweam-team/lucid-v1",
-                branch="master",
-                markers="platform_system != 'Windows'",  # JAX does not support GPU on Windows
-            ),
-        ],
-        "open_oasis": [
-            PathSource(
-                path=Path("open-oasis"),
-            ),
-            GitBranchSource(
-                git="https://github.com/dweam-team/open-oasis",
-                branch="master",
-                markers="platform_system != 'Windows'",  # triton does not support Windows
-            ),
-        ],
-        "diamond_mariokart": [
-            PathSource(
-                path=Path("AI-MarioKart64"),
-            ),
-            GitBranchSource(
-                git="https://github.com/dweam-team/AI-MarioKart64",
-                branch="main",
-            ),
-        ],
-        "diamond_csgo": [
-            PathSource(
-                path=Path("diamond-csgo"),
-            ),
-            GitBranchSource(
-                git="https://github.com/dweam-team/diamond",
-                branch="csgo",
-            ),
-        ],
-        "snake_diffusion": [
-            PathSource(
-                path=Path("snake-diffusion"),
-            ),
-            GitBranchSource(
-                git="https://github.com/dweam-team/snake-diffusion",
-                branch="main",
-            ),
-        ],
-        "diamond_atari": [
-            PathSource(
-                path=Path("diamond"),
-            ),
-            GitBranchSource(
-                git="https://github.com/dweam-team/diamond",
-                branch="main",
-            ),
-        ],
+        # "diamond_yumenikki": [
+        #     PathSource(
+        #         path=Path("diamond-yumenikki"),
+        #     ),
+        #     GitBranchSource(
+        #         git="https://github.com/dweam-team/diamond-yumenikki",
+        #         branch="master",
+        #     ),
+        # ],
+        # "lucid_v1": [
+        #     PathSource(
+        #         path=Path("lucid-v1"),
+        #     ),
+        #     GitBranchSource(
+        #         git="https://github.com/dweam-team/lucid-v1",
+        #         branch="master",
+        #         markers="platform_system != 'Windows'",  # JAX does not support GPU on Windows
+        #     ),
+        # ],
+        # "open_oasis": [
+        #     PathSource(
+        #         path=Path("open-oasis"),
+        #     ),
+        #     GitBranchSource(
+        #         git="https://github.com/dweam-team/open-oasis",
+        #         branch="master",
+        #         markers="platform_system != 'Windows'",  # triton does not support Windows
+        #     ),
+        # ],
+        # "diamond_mariokart": [
+        #     PathSource(
+        #         path=Path("AI-MarioKart64"),
+        #     ),
+        #     GitBranchSource(
+        #         git="https://github.com/dweam-team/AI-MarioKart64",
+        #         branch="main",
+        #     ),
+        # ],
+        # "diamond_csgo": [
+        #     PathSource(
+        #         path=Path("diamond-csgo"),
+        #     ),
+        #     GitBranchSource(
+        #         git="https://github.com/dweam-team/diamond",
+        #         branch="csgo",
+        #     ),
+        # ],
+        # "snake_diffusion": [
+        #     PathSource(
+        #         path=Path("snake-diffusion"),
+        #     ),
+        #     GitBranchSource(
+        #         git="https://github.com/dweam-team/snake-diffusion",
+        #         branch="main",
+        #     ),
+        # ],
+        # "diamond_atari": [
+        #     PathSource(
+        #         path=Path("diamond"),
+        #     ),
+        #     GitBranchSource(
+        #         git="https://github.com/dweam-team/diamond",
+        #         branch="main",
+        #     ),
+        # ],
     }
 )
 

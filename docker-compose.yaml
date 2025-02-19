@@ -33,6 +33,7 @@ services:
       - JAX_COMPILATION_CACHE_DIR=/root/.cache-data/xla_cache
     volumes:
       - ./.cache-data:/root/.cache-data
+      - ./wham:/app/wham
     deploy:
       resources:
         reservations:
