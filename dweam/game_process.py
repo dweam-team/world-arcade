@@ -1,12 +1,13 @@
 import os
 from pathlib import Path
 import sys
+from datetime import datetime, timedelta
 
 
 def setup_logging() -> None:
     """Set up logging to both console and file"""
 
-    pid = os.getpid()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     cache_dir = os.environ.get("CACHE_DIR")
     if cache_dir is None:
@@ -17,7 +18,7 @@ def setup_logging() -> None:
     log_dir = cache_dir / "worker_logs"
     log_dir.mkdir(exist_ok=True)
     
-    log_file = log_dir / f"game_process_{pid}.log"
+    log_file = log_dir / f"game_process_{timestamp}.log"
     
     # Create file handle with line buffering
     log_handle = open(log_file, 'w', buffering=1)
@@ -45,6 +46,7 @@ def setup_logging() -> None:
     sys.stdout = DualOutput(original_stdout, log_handle)
     sys.stderr = DualOutput(original_stderr, log_handle)
 
+    pid = os.getpid()
     print(f"=== Game Process {pid} Starting ===")
     print(f"Logging to {log_file}")
     print(f"Command line args: {sys.argv}")
